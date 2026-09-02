@@ -125,6 +125,15 @@ npm run sync              # re-syncs, then warns about the stranded rows
 npm run sync -- --prune   # same, but also deletes them
 ```
 
+The `--` matters: it is what forwards the flag through to the workspace
+script instead of npm parsing it as one of its own config flags. If your npm
+ever swallows it anyway (look for `Unknown cli config "--prune"`), call the
+script directly:
+
+```bash
+npm run sync --workspace=packages/server -- --prune
+```
+
 The warning names what it found, so you can confirm before deleting:
 
 ```

@@ -12,7 +12,7 @@
     "dev": "npm run dev --workspace=packages/server & npm run dev --workspace=packages/web",
     "dev:server": "npm run dev --workspace=packages/server",
     "dev:web": "npm run dev --workspace=packages/web",
-    "sync": "npm run sync --workspace=packages/server",
+    "sync": "npm run sync --workspace=packages/server --",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },
