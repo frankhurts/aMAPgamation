@@ -5,6 +5,54 @@ import { MapView } from "./MapView";
 
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
+interface MapGroup {
+  key: string;
+  label: string;
+  layers: Layer[];
+}
+
+interface ServiceGroup {
+  source: string;
+  label: string;
+  maps: MapGroup[];
+}
+
+/**
+ * Toggles every layer of one map at once. Rendered half-checked when only
+ * some of its layers are on, so the map row always reports the truth about
+ * what is drawn beneath it.
+ */
+function MapToggle({
+  map,
+  visible,
+  onToggle,
+}: {
+  map: MapGroup;
+  visible: Set<string>;
+  onToggle: (layers: Layer[], on: boolean) => void;
+}) {
+  const on = map.layers.filter((l) => visible.has(l.id)).length;
+  const all = on === map.layers.length;
+  const features = map.layers.reduce((n, l) => n + l.feature_count, 0);
+
+  return (
+    <label className="map-head">
+      <input
+        type="checkbox"
+        checked={all}
+        ref={(el) => {
+          if (el) el.indeterminate = on > 0 && !all;
+        }}
+        onChange={() => onToggle(map.layers, !all)}
+      />
+      <span className="map-name" title={map.label}>
+        {map.label}
+      </span>
+      <span className="count">{features}</span>
+    </label>
+  );
+}
+
 export default function App() {
   const [layers, setLayers] = useState<Layer[]>([]);
   const [data, setData] = useState<GeoJSON.FeatureCollection>(EMPTY);
@@ -54,16 +102,31 @@ export default function App() {
     }
   };
 
-  // Grouped by service, not by config key, so two CalTopo maps land under one
-  // "CalTopo" heading instead of two headings named after sources.json keys.
-  const grouped = useMemo(() => {
-    const by = new Map<string, { label: string; layers: Layer[] }>();
+  // service -> map -> layers. Insertion order follows the query's ORDER BY,
+  // so groups stay in a stable order across syncs.
+  const grouped = useMemo<ServiceGroup[]>(() => {
+    const services = new Map<string, { label: string; maps: Map<string, MapGroup> }>();
+
     for (const l of layers) {
-      const group = by.get(l.source) ?? { label: l.source_label, layers: [] };
-      group.layers.push(l);
-      by.set(l.source, group);
+      let service = services.get(l.source);
+      if (!service) {
+        service = { label: l.source_label, maps: new Map() };
+        services.set(l.source, service);
+      }
+
+      let map = service.maps.get(l.source_key);
+      if (!map) {
+        map = { key: l.source_key, label: l.map_label, layers: [] };
+        service.maps.set(l.source_key, map);
+      }
+      map.layers.push(l);
     }
-    return [...by.entries()];
+
+    return [...services.entries()].map(([source, s]) => ({
+      source,
+      label: s.label,
+      maps: [...s.maps.values()],
+    }));
   }, [layers]);
 
   const toggle = (id: string) =>
@@ -71,6 +134,16 @@ export default function App() {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      return next;
+    });
+
+  const toggleMap = (ls: Layer[], on: boolean) =>
+    setVisible((prev) => {
+      const next = new Set(prev);
+      for (const l of ls) {
+        if (on) next.add(l.id);
+        else next.delete(l.id);
+      }
       return next;
     });
 
@@ -128,20 +201,27 @@ export default function App() {
             </div>
 
             <div className="layer-list">
-              {grouped.map(([source, group]) => (
-                <section key={source}>
-                  <h2>{group.label}</h2>
-                  {group.layers.map((l) => (
-                    <label key={l.id} className="layer">
-                      <input
-                        type="checkbox"
-                        checked={visible.has(l.id)}
-                        onChange={() => toggle(l.id)}
-                      />
-                      <span className="swatch" style={{ background: l.color ?? "#888" }} />
-                      <span className="layer-name">{l.name}</span>
-                      <span className="count">{l.feature_count}</span>
-                    </label>
+              {grouped.map((service) => (
+                <section key={service.source}>
+                  <h2>{service.label}</h2>
+                  {service.maps.map((map) => (
+                    <div key={map.key} className="map-group">
+                      <MapToggle map={map} visible={visible} onToggle={toggleMap} />
+                      {map.layers.map((l) => (
+                        <label key={l.id} className="layer">
+                          <input
+                            type="checkbox"
+                            checked={visible.has(l.id)}
+                            onChange={() => toggle(l.id)}
+                          />
+                          <span className="swatch" style={{ background: l.color ?? "#888" }} />
+                          <span className="layer-name" title={l.name}>
+                            {l.name}
+                          </span>
+                          <span className="count">{l.feature_count}</span>
+                        </label>
+                      ))}
+                    </div>
                   ))}
                 </section>
               ))}

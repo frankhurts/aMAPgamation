@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
-import { DATA_DIR, DB_PATH } from "./config.js";
+import { DATA_DIR, DB_PATH, loadSources } from "./config.js";
 import { SOURCE_LABELS } from "./types.js";
 import type { NormalizedFeature, NormalizedLayer, SourceType } from "./types.js";
 
@@ -152,6 +152,8 @@ export interface LayerRow {
   source_key: string;
   /** Display name of the originating service, e.g. "CalTopo". */
   source_label: string;
+  /** Display name of the individual map, e.g. "Road Trip - Utah". */
+  map_label: string;
   name: string;
   color: string | null;
   sort_order: number;
@@ -159,18 +161,45 @@ export interface LayerRow {
   feature_count: number;
 }
 
-export function listLayers(): LayerRow[] {
+/**
+ * The sidebar nests service -> map -> layer, so rows carry both labels.
+ *
+ * Both are derived on read rather than stored: renaming a map in sources.json
+ * should take effect without re-syncing it. `mapLabels` is injectable so tests
+ * can supply labels without writing to the real config file; in production it
+ * comes from sources.json.
+ *
+ * A map dropped from sources.json while its data is still in the DB falls back
+ * to its config key, so orphaned layers stay identifiable rather than blank.
+ */
+export function listLayers(mapLabels?: Map<string, string>): LayerRow[] {
   const rows = db
     .prepare(
       `SELECT l.*, (SELECT COUNT(*) FROM features f WHERE f.layer_id = l.id) AS feature_count
        FROM layers l
        ORDER BY l.source, l.source_key, l.sort_order, l.name`,
     )
-    .all() as Omit<LayerRow, "source_label">[];
+    .all() as Omit<LayerRow, "source_label" | "map_label">[];
 
-  // Derived on read rather than stored, so renaming a service does not
-  // require re-syncing every map.
-  return rows.map((r) => ({ ...r, source_label: SOURCE_LABELS[r.source] ?? r.source }));
+  const labels = mapLabels ?? new Map(loadSources().map((s) => [s.id, s.label]));
+
+  // Maps appear in the order they are listed in sources.json rather than
+  // alphabetically by config key, so the sidebar mirrors the file the user
+  // actually edits. Anything no longer in the config sorts last.
+  const configOrder = new Map([...labels.keys()].map((key, i) => [key, i]));
+
+  return rows
+    .map((r) => ({
+      ...r,
+      source_label: SOURCE_LABELS[r.source] ?? r.source,
+      map_label: labels.get(r.source_key) ?? r.source_key,
+    }))
+    // Stable sort, so the SQL ORDER BY still decides layer order within a map.
+    .sort(
+      (a, b) =>
+        (configOrder.get(a.source_key) ?? Infinity) -
+        (configOrder.get(b.source_key) ?? Infinity),
+    );
 }
 
 export function featureCollection(layerIds?: string[]): GeoJSON.FeatureCollection {

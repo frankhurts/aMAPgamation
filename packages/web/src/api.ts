@@ -4,6 +4,8 @@ export interface Layer {
   source_key: string;
   /** Display name of the originating service, e.g. "CalTopo". */
   source_label: string;
+  /** Display name of the individual map, e.g. "Road Trip - Utah". */
+  map_label: string;
   name: string;
   color: string | null;
   sort_order: number;

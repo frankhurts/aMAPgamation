@@ -145,6 +145,46 @@ test("re-syncing replaces a source without disturbing the others", async () => {
   }
 });
 
+test("layers carry service and map labels, ordered by sources.json", async () => {
+  const { syncSource } = await import("../src/connectors/index.js");
+  const { listLayers } = await import("../src/db.js");
+
+  await syncSource(MYMAPS);
+  await syncSource(CALTOPO);
+
+  // "trip" listed first though it sorts after "backcountry" alphabetically,
+  // and after it by source ("caltopo" < "mymaps") — so only config order can
+  // produce this result.
+  const labels = new Map([
+    ["trip", "Road Trip - Utah"],
+    ["backcountry", "Backcountry Routes"],
+  ]);
+  const rows = listLayers(labels);
+
+  assert.deepEqual(
+    [...new Set(rows.map((l) => l.map_label))],
+    ["Road Trip - Utah", "Backcountry Routes"],
+    "maps must follow sources.json order, not alphabetical config keys",
+  );
+
+  // Layer order within a map still comes from the connector's sortOrder.
+  assert.deepEqual(
+    rows.filter((l) => l.source_key === "trip").map((l) => l.name),
+    ["Day 3 - Moab", "Day 4 - Canyonlands", "Unfiled"],
+  );
+
+  // Service label and map label are different axes and must not be confused.
+  const utah = rows.find((l) => l.source_key === "trip")!;
+  assert.equal(utah.source_label, "MyMaps");
+  assert.equal(utah.map_label, "Road Trip - Utah");
+
+  // A map dropped from sources.json stays identifiable by its config key.
+  assert.deepEqual(
+    [...new Set(listLayers(new Map()).map((l) => l.map_label))].sort(),
+    ["backcountry", "trip"],
+  );
+});
+
 test("a failing source reports the error without leaking the map id", async () => {
   const { syncSource } = await import("../src/connectors/index.js");
   globalThis.fetch = (async () => new Response("nope", { status: 404 })) as typeof fetch;
