@@ -54,12 +54,14 @@ export default function App() {
     }
   };
 
+  // Grouped by service, not by config key, so two CalTopo maps land under one
+  // "CalTopo" heading instead of two headings named after sources.json keys.
   const grouped = useMemo(() => {
-    const by = new Map<string, Layer[]>();
+    const by = new Map<string, { label: string; layers: Layer[] }>();
     for (const l of layers) {
-      const list = by.get(l.source_key) ?? [];
-      list.push(l);
-      by.set(l.source_key, list);
+      const group = by.get(l.source) ?? { label: l.source_label, layers: [] };
+      group.layers.push(l);
+      by.set(l.source, group);
     }
     return [...by.entries()];
   }, [layers]);
@@ -126,10 +128,10 @@ export default function App() {
             </div>
 
             <div className="layer-list">
-              {grouped.map(([sourceKey, ls]) => (
-                <section key={sourceKey}>
-                  <h2>{sourceKey}</h2>
-                  {ls.map((l) => (
+              {grouped.map(([source, group]) => (
+                <section key={source}>
+                  <h2>{group.label}</h2>
+                  {group.layers.map((l) => (
                     <label key={l.id} className="layer">
                       <input
                         type="checkbox"

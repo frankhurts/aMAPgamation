@@ -2,6 +2,8 @@ export interface Layer {
   id: string;
   source: string;
   source_key: string;
+  /** Display name of the originating service, e.g. "CalTopo". */
+  source_label: string;
   name: string;
   color: string | null;
   sort_order: number;

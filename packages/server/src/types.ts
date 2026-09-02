@@ -8,6 +8,18 @@
  */
 export type SourceType = "mymaps" | "caltopo" | "gpx" | "takeout";
 
+/**
+ * How each service is named in the UI. Distinct from a SourceConfig's `id`
+ * (a config key like "roadtrip-main") and its `label` (which names one
+ * particular map) — this names the service the data came from.
+ */
+export const SOURCE_LABELS: Record<SourceType, string> = {
+  mymaps: "MyMaps",
+  caltopo: "CalTopo",
+  gpx: "GPX",
+  takeout: "Google Saved Places",
+};
+
 export interface SourceConfig {
   type: SourceType;
   /** Stable local key, used to namespace ids. Safe to appear in the UI. */

@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { DATA_DIR, DB_PATH } from "./config.js";
+import { SOURCE_LABELS } from "./types.js";
 import type { NormalizedFeature, NormalizedLayer, SourceType } from "./types.js";
 
 mkdirSync(DATA_DIR, { recursive: true });
@@ -149,6 +150,8 @@ export interface LayerRow {
   id: string;
   source: SourceType;
   source_key: string;
+  /** Display name of the originating service, e.g. "CalTopo". */
+  source_label: string;
   name: string;
   color: string | null;
   sort_order: number;
@@ -157,13 +160,17 @@ export interface LayerRow {
 }
 
 export function listLayers(): LayerRow[] {
-  return db
+  const rows = db
     .prepare(
       `SELECT l.*, (SELECT COUNT(*) FROM features f WHERE f.layer_id = l.id) AS feature_count
        FROM layers l
-       ORDER BY l.source_key, l.sort_order, l.name`,
+       ORDER BY l.source, l.source_key, l.sort_order, l.name`,
     )
-    .all() as LayerRow[];
+    .all() as Omit<LayerRow, "source_label">[];
+
+  // Derived on read rather than stored, so renaming a service does not
+  // require re-syncing every map.
+  return rows.map((r) => ({ ...r, source_label: SOURCE_LABELS[r.source] ?? r.source }));
 }
 
 export function featureCollection(layerIds?: string[]): GeoJSON.FeatureCollection {

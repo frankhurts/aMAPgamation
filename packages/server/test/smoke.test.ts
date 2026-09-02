@@ -79,7 +79,7 @@ test("CalTopo folders become layers and unfiled features get a home", async () =
 
   assert.deepEqual(
     layers.map((l) => l.name),
-    ["Hiking Routes", "Water Sources", "Backcountry — unfiled"],
+    ["Hiking Routes", "Water Sources", "Unfiled"],
   );
   // Folder features carry no geometry and must not become map features.
   assert.equal(features.length, 3);
@@ -107,6 +107,14 @@ test("re-syncing replaces a source without disturbing the others", async () => {
   await syncSource(mymaps);
   assert.equal(stats().features, 6, "re-sync duplicated features");
   assert.equal(listLayers().length, 5);
+
+  // Sidebar headings come from the service, not from the sources.json key
+  // ("trip"/"backcountry") or the per-map label ("Trip"/"Backcountry").
+  assert.deepEqual(
+    [...new Set(listLayers().map((l) => l.source_label))].sort(),
+    ["CalTopo", "MyMaps"],
+    "layers must be labelled by service, not by config id",
+  );
 
   const fc = featureCollection();
   assert.equal(fc.features.length, 6);

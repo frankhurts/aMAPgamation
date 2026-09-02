@@ -78,7 +78,9 @@ export async function syncCalTopo(
         id: stableId(cfg.id, "folder", "__unfiled__"),
         source: "caltopo",
         sourceKey: cfg.id,
-        name: `${cfg.label} — unfiled`,
+        // Sits under the "CalTopo" heading already, so repeating the service
+        // or the map name here would just be noise.
+        name: "Unfiled",
         color: paletteColor(layers.length),
         sortOrder: layers.length + 1000,
       };
