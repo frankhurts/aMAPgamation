@@ -93,25 +93,82 @@ toggling a layer is just a `setData` call.
 
 ## Renaming a source
 
-A source's `id` is the database key: layers and features are stored against it,
-and deletes are scoped to it. Renaming one in `sources.json` therefore strands
-its old rows, which would otherwise show in the sidebar as a stale duplicate.
+### What each field means
 
-Nothing is lost by renaming — the DB is a rebuildable cache, the upstream maps
-are the source of truth, and layer visibility is client-side state. Just prune
-afterwards:
+| Field | Safe to change? | Why |
+| --- | --- | --- |
+| `label` | Anytime, no re-sync | Display only. Joined on read, so the sidebar updates on next page load. |
+| `id` | Yes, with one extra step | It is the database key. See below. |
+| `mapId` | Only if the upstream map changed | The share token used to fetch. Changing it points at a different map. |
+| `type` | Only if you picked the wrong service | Selects the connector. |
+
+### Why renaming an `id` needs a prune
+
+A source's `id` becomes `source_key` in the database. Layers and features are
+stored against it, and deletes are scoped to it — that scoping is what lets you
+re-sync one My Maps map without disturbing CalTopo data or imported GPX tracks.
+
+The consequence is that renaming an `id` leaves the old rows unmatched. The next
+sync writes a fresh copy under the new key while the old layers stay behind, and
+the sidebar shows both: the new map, plus a stale duplicate headed by the old
+config key.
+
+Nothing is actually lost by renaming. The database is a rebuildable cache, your
+upstream maps are the source of truth, and layer visibility is client-side state
+that does not survive a page reload anyway. The old rows just need clearing.
+
+### Doing it
 
 ```bash
-# 1. edit config/sources.json, changing "id" (keep "mapId" the same)
-npm run sync              # warns: "roadtrip-main" is no longer in sources.json
-npm run sync -- --prune   # re-syncs under the new id and drops the old rows
+# 1. Edit config/sources.json — change "id", leave "mapId" alone.
+npm run sync              # re-syncs, then warns about the stranded rows
+npm run sync -- --prune   # same, but also deletes them
 ```
 
-`label` is display-only and can be changed freely at any time — no re-sync
-needed, since it is joined on read.
+The warning names what it found, so you can confirm before deleting:
 
-A source turned off with `"enabled": false` is still a known source and is
-never treated as an orphan.
+```
+  2 source(s) in the database are no longer in sources.json:
+    "backcountry-routes" — 3 layers, 3 features
+    "roadtrip-main" — 3 layers, 5 features
+  This is expected right after renaming a source id.
+  Remove them with:  npm run sync -- --prune
+```
+
+The same is available over HTTP for the UI to use later:
+
+| Endpoint | Does |
+| --- | --- |
+| `GET /api/orphans` | Lists source keys held in the DB but absent from config |
+| `DELETE /api/orphans/:key` | Removes one; 404s if the key is *not* an orphan |
+
+### Two safeguards
+
+**Pruning is never automatic.** A plain `npm run sync` only reports orphans.
+Deletion always requires the explicit `--prune` flag, because a source missing
+from the config is ambiguous — it might be a rename, or a file you are midway
+through editing.
+
+**A disabled source is not an orphan.** Turning a map off with
+`"enabled": false` keeps it out of syncs but leaves its data intact; it is still
+a known source and will never be pruned. This is why the orphan check reads the
+config with disabled sources included.
+
+### Choosing ids
+
+Ids are cheap to change but not free — each rename costs a full re-fetch of that
+map. Worth settling on a scheme early.
+
+Since the sidebar already groups by service, repeating the service in the id is
+redundant. Region-first tends to age better once you have several maps per
+service, because ids then cluster by region in the file, and sidebar order
+follows file order:
+
+```json
+{ "type": "mymaps",  "id": "utah-basecamp",     "label": "Utah - Basecamp" },
+{ "type": "caltopo", "id": "utah-backcountry",  "label": "Utah - Backcountry" },
+{ "type": "mymaps",  "id": "montana-basecamp",  "label": "Montana - Basecamp" }
+```
 
 ## Commands
 
