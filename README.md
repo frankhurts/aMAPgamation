@@ -81,8 +81,15 @@ place instead of duplicating them. Deletes are scoped to `source_key`, which is
 what lets you re-sync one My Maps map without touching your CalTopo layers or
 hand-imported GPX tracks.
 
-Layer colors resolve feature style → layer color → palette, on the server, so
-the map's paint spec stays static and toggling a layer is just a `setData` call.
+Color is resolved once per layer, not per feature, so everything under one
+sidebar item renders identically and the swatch predicts what is on the map. A
+layer adopts whichever color most of its features carried upstream — a My Maps
+folder styled green stays green — and falls back to the palette when a folder
+has no styling. Per-feature colors are preserved on `props.sourceColor` for the
+styling/templating pass, so nothing is lost.
+
+Because color lives on the feature, the map's paint spec stays static and
+toggling a layer is just a `setData` call.
 
 ## Commands
 
@@ -105,3 +112,7 @@ is what makes the whole thing work with no signal.
 - **Phase 2** — GPX import (OnX exports), Google Takeout + Places hydration
 - **Phase 3** — PAD-US / BLM / USFS MVUM clipped to route, built into PMTiles
 - **Phase 4** — Trip → Day → Stop model, offline PWA packaging
+
+- [] adding multiple MyMaps maps (e.g.: road trip - Utah, road trip - Montana, etc)
+- [] adding multiple maps for all services (CalTopo mostly)
+- [] adding functionality for AllTrails, Strava, iOverland, hipcamp, campspot, campendium

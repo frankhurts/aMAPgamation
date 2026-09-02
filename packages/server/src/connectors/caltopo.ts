@@ -1,5 +1,5 @@
 import { stableId } from "../db.js";
-import { paletteColor } from "./palette.js";
+import { applyLayerColors, normalizeColor, paletteColor } from "./palette.js";
 import type { NormalizedFeature, NormalizedLayer, SourceConfig } from "../types.js";
 
 /**
@@ -101,8 +101,9 @@ export async function syncCalTopo(
 
     const stroke = props["stroke"];
     const fill = props["fill"];
-    const color =
-      (typeof stroke === "string" && stroke) || (typeof fill === "string" && fill) || null;
+    const sourceColor = normalizeColor(
+      (typeof stroke === "string" && stroke) || (typeof fill === "string" && fill) || null,
+    );
 
     features.push({
       id: stableId(cfg.id, String(f.id ?? ""), JSON.stringify(f.geometry)),
@@ -112,9 +113,11 @@ export async function syncCalTopo(
       layerId: layer.id,
       name: (props["title"] as string) ?? null,
       description: (props["description"] as string) ?? (props["comments"] as string) ?? null,
-      color: color ? (color.startsWith("#") ? color : `#${color}`) : layer.color,
+      // Resolved per layer by applyLayerColors once all features are known.
+      color: null,
       geometry: f.geometry,
       props: {
+        sourceColor,
         class: props["class"],
         markerSymbol: props["marker-symbol"],
         // Kept because CalTopo route/track distances are already computed
@@ -125,5 +128,6 @@ export async function syncCalTopo(
     });
   }
 
+  applyLayerColors(layers, features);
   return { layers, features };
 }

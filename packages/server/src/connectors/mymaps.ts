@@ -1,7 +1,7 @@
 import { DOMParser } from "@xmldom/xmldom";
 import * as toGeoJSON from "@tmcw/togeojson";
 import { stableId } from "../db.js";
-import { paletteColor } from "./palette.js";
+import { applyLayerColors, normalizeColor, paletteColor } from "./palette.js";
 import type { NormalizedFeature, NormalizedLayer, SourceConfig } from "../types.js";
 
 /**
@@ -77,7 +77,7 @@ export async function syncMyMaps(
   const layers: NormalizedLayer[] = [];
   const features: NormalizedFeature[] = [];
 
-  const pushFeature = (f: GeoJSON.Feature, layerId: string | null, layerColor: string | null) => {
+  const pushFeature = (f: GeoJSON.Feature, layerId: string) => {
     if (!f.geometry) return;
     const props = { ...(f.properties ?? {}) } as Record<string, unknown>;
     const name = typeof props["name"] === "string" ? props["name"] : null;
@@ -92,11 +92,31 @@ export async function syncMyMaps(
       layerId,
       name,
       description,
-      color: featureColor(props) ?? layerColor,
+      // Left null deliberately: applyLayerColors resolves one color per layer
+      // once every feature is known, so a folder cannot render multi-coloured.
+      color: null,
       geometry: f.geometry,
-      props,
+      props: { ...props, sourceColor: normalizeColor(featureColor(props)) },
       raw: props,
     });
+  };
+
+  // A map can mix foldered and loose placemarks. Loose ones still need a
+  // sidebar entry, or they would be filtered out of the map entirely.
+  let unfiled: NormalizedLayer | null = null;
+  const ensureUnfiled = (): NormalizedLayer => {
+    if (!unfiled) {
+      unfiled = {
+        id: stableId(cfg.id, "folder", "__unfiled__"),
+        source: "mymaps",
+        sourceKey: cfg.id,
+        name: "Unfiled",
+        color: paletteColor(layers.length),
+        sortOrder: 1000,
+      };
+      layers.push(unfiled);
+    }
+    return unfiled;
   };
 
   // kmlWithFolders keeps the <Folder> tree, which is exactly your My Maps
@@ -124,14 +144,14 @@ export async function syncMyMaps(
           layers.push(layer);
           walk(child, layer);
         } else {
-          pushFeature(child as GeoJSON.Feature, inherited?.id ?? null, inherited?.color ?? null);
+          pushFeature(child as GeoJSON.Feature, (inherited ?? ensureUnfiled()).id);
         }
       }
     };
     walk(root, null);
   }
 
-  // Either the fallback path, or a map whose placemarks sit outside any folder.
+  // Fallback for a togeojson build without kmlWithFolders: one flat layer.
   if (features.length === 0) {
     const flat = toGeoJSON.kml(doc) as GeoJSON.FeatureCollection;
     const layer: NormalizedLayer = {
@@ -143,8 +163,9 @@ export async function syncMyMaps(
       sortOrder: 0,
     };
     layers.push(layer);
-    for (const f of flat.features) pushFeature(f, layer.id, layer.color);
+    for (const f of flat.features) pushFeature(f, layer.id);
   }
 
+  applyLayerColors(layers, features);
   return { layers, features };
 }

@@ -40,42 +40,60 @@ after(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-test("My Maps folders become layers, styles become colors", async () => {
+const MYMAPS = { type: "mymaps", id: "trip", label: "Trip", mapId: "fake" } as const;
+const CALTOPO = { type: "caltopo", id: "backcountry", label: "Backcountry", mapId: "fake" } as const;
+
+test("My Maps folders become layers", async () => {
   const { syncMyMaps } = await import("../src/connectors/mymaps.js");
-  const { layers, features } = await syncMyMaps({
-    type: "mymaps",
-    id: "trip",
-    label: "Trip",
-    mapId: "fake",
-  });
+  const { layers, features } = await syncMyMaps(MYMAPS);
 
   assert.deepEqual(
     layers.map((l) => l.name),
-    ["Day 3 - Moab", "Day 4 - Canyonlands"],
+    ["Day 3 - Moab", "Day 4 - Canyonlands", "Unfiled"],
   );
-  assert.equal(features.length, 3);
-
-  const trail = features.find((f) => f.name === "Shafer Trail");
-  assert.ok(trail);
-  assert.equal(trail.geometry.type, "LineString");
-  // KML aabbggrr ff0000ff is red; a bad byte-order conversion yields #0000ff.
-  assert.equal(trail.color, "#ff0000");
-  assert.equal(trail.layerId, layers[0]!.id);
+  assert.equal(features.length, 5);
 
   const camp = features.find((f) => f.name === "Camp spot");
   assert.equal(camp?.description, "BLM, free, no services");
-  // Unstyled features inherit their layer's palette color.
-  assert.equal(camp?.color, layers[0]!.color);
+  assert.equal(camp?.layerId, layers[0]!.id);
+
+  // A placemark outside every <Folder> still needs a sidebar entry; without
+  // one the UI's layer filter would silently drop it from the map.
+  const loose = features.find((f) => f.name === "Loose pin");
+  assert.equal(loose?.layerId, layers[2]!.id, "loose placemark must land in Unfiled");
+});
+
+test("every feature renders in its layer's color", async () => {
+  const { syncMyMaps } = await import("../src/connectors/mymaps.js");
+  const { layers, features } = await syncMyMaps(MYMAPS);
+  const colorOf = new Map(layers.map((l) => [l.id, l.color]));
+
+  for (const f of features) {
+    assert.equal(
+      f.color,
+      colorOf.get(f.layerId!),
+      `"${f.name}" does not match its layer swatch`,
+    );
+  }
+
+  // "Day 3 - Moab" holds two red placemarks and one green. The layer settles
+  // on the majority color rather than an arbitrary palette entry, so a folder
+  // styled in My Maps keeps looking like itself.
+  assert.equal(layers[0]!.color, "#ff0000");
+
+  // The outlier is re-colored to match, but its original is preserved so the
+  // styling pass can offer "revert to source colors".
+  const odd = features.find((f) => f.name === "Odd one out");
+  assert.equal(odd?.color, "#ff0000", "outlier must adopt the layer color");
+  assert.equal(odd?.props["sourceColor"], "#00ff00", "original color must survive");
+
+  // A folder with no upstream styling at all falls back to the palette.
+  assert.equal(layers[1]!.color, "#3cb44b");
 });
 
 test("CalTopo folders become layers and unfiled features get a home", async () => {
   const { syncCalTopo } = await import("../src/connectors/caltopo.js");
-  const { layers, features } = await syncCalTopo({
-    type: "caltopo",
-    id: "backcountry",
-    label: "Backcountry",
-    mapId: "fake",
-  });
+  const { layers, features } = await syncCalTopo(CALTOPO);
 
   assert.deepEqual(
     layers.map((l) => l.name),
@@ -85,28 +103,28 @@ test("CalTopo folders become layers and unfiled features get a home", async () =
   assert.equal(features.length, 3);
 
   const ridge = features.find((f) => f.name === "Ridge Route");
-  assert.equal(ridge?.color, "#FF0000");
+  assert.equal(ridge?.color, "#ff0000", "hex casing must not split a color group");
   assert.equal(ridge?.props["distance"], 4823.5);
 
   const orphan = features.find((f) => f.name === "Unfiled waypoint");
   assert.equal(orphan?.layerId, layers[2]!.id);
+
+  const colorOf = new Map(layers.map((l) => [l.id, l.color]));
+  for (const f of features) assert.equal(f.color, colorOf.get(f.layerId!));
 });
 
 test("re-syncing replaces a source without disturbing the others", async () => {
   const { syncSource } = await import("../src/connectors/index.js");
   const { listLayers, stats, featureCollection } = await import("../src/db.js");
 
-  const mymaps = { type: "mymaps", id: "trip", label: "Trip", mapId: "fake" } as const;
-  const caltopo = { type: "caltopo", id: "backcountry", label: "Backcountry", mapId: "fake" } as const;
-
-  await syncSource(mymaps);
-  await syncSource(caltopo);
-  assert.equal(stats().features, 6);
+  await syncSource(MYMAPS);
+  await syncSource(CALTOPO);
+  assert.equal(stats().features, 8);
 
   // Ids are content-derived, so a second sync must be a no-op, not a duplicate.
-  await syncSource(mymaps);
-  assert.equal(stats().features, 6, "re-sync duplicated features");
-  assert.equal(listLayers().length, 5);
+  await syncSource(MYMAPS);
+  assert.equal(stats().features, 8, "re-sync duplicated features");
+  assert.equal(listLayers().length, 6);
 
   // Sidebar headings come from the service, not from the sources.json key
   // ("trip"/"backcountry") or the per-map label ("Trip"/"Backcountry").
@@ -116,10 +134,15 @@ test("re-syncing replaces a source without disturbing the others", async () => {
     "layers must be labelled by service, not by config id",
   );
 
+  // The swatch the sidebar draws must be the color the map actually paints.
+  const swatch = new Map(listLayers().map((l) => [l.id, l.color]));
   const fc = featureCollection();
-  assert.equal(fc.features.length, 6);
-  assert.ok(fc.features.every((f) => f.properties?.["layerId"]), "every feature needs a layer");
-  assert.ok(fc.features.every((f) => f.properties?.["color"]), "every feature needs a color");
+  assert.equal(fc.features.length, 8);
+  for (const f of fc.features) {
+    const p = f.properties!;
+    assert.ok(p["layerId"], "every feature needs a layer");
+    assert.equal(p["color"], swatch.get(String(p["layerId"])), "swatch must predict the map");
+  }
 });
 
 test("a failing source reports the error without leaking the map id", async () => {

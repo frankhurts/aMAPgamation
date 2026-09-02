@@ -1,17 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2"><Document>
   <name>Road Trip</name>
-  <Style id="red"><LineStyle><color>ff0000ff</color><width>4</width></LineStyle></Style>
+  <Style id="red"><LineStyle><color>ff0000ff</color><width>4</width></LineStyle>
+    <IconStyle><color>ff0000ff</color></IconStyle></Style>
+  <Style id="green"><IconStyle><color>ff00ff00</color></IconStyle></Style>
   <Folder>
     <name>Day 3 - Moab</name>
+    <!-- Two red, one green: the layer must settle on red for all three. -->
     <Placemark><name>Camp spot</name><description>BLM, free, no services</description>
+      <styleUrl>#red</styleUrl>
       <Point><coordinates>-109.55,38.57,0</coordinates></Point></Placemark>
+    <Placemark><name>Odd one out</name><styleUrl>#green</styleUrl>
+      <Point><coordinates>-109.51,38.51,0</coordinates></Point></Placemark>
     <Placemark><name>Shafer Trail</name><styleUrl>#red</styleUrl>
       <LineString><coordinates>-109.5,38.5,0 -109.6,38.6,0</coordinates></LineString></Placemark>
   </Folder>
   <Folder>
     <name>Day 4 - Canyonlands</name>
+    <!-- No styling at all: falls back to the palette. -->
     <Placemark><name>Trailhead</name>
       <Point><coordinates>-109.87,38.38,0</coordinates></Point></Placemark>
   </Folder>
+  <!-- Outside every folder: must still get a sidebar entry, not vanish. -->
+  <Placemark><name>Loose pin</name>
+    <Point><coordinates>-110.2,38.1,0</coordinates></Point></Placemark>
 </Document></kml>

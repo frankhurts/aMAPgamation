@@ -7,6 +7,10 @@
 config/sources.json
 config/*.local.json
 
+# Saved reference pages / personal notes kept alongside the repo but not
+# meant for GitHub.
+documentation/
+
 # Your actual trip data (SQLite DB, cached KML/GeoJSON, GPX drops, Takeout)
 data/
 imports/
