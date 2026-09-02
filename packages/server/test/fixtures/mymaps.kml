@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+  <name>Road Trip</name>
+  <Style id="red"><LineStyle><color>ff0000ff</color><width>4</width></LineStyle></Style>
+  <Folder>
+    <name>Day 3 - Moab</name>
+    <Placemark><name>Camp spot</name><description>BLM, free, no services</description>
+      <Point><coordinates>-109.55,38.57,0</coordinates></Point></Placemark>
+    <Placemark><name>Shafer Trail</name><styleUrl>#red</styleUrl>
+      <LineString><coordinates>-109.5,38.5,0 -109.6,38.6,0</coordinates></LineString></Placemark>
+  </Folder>
+  <Folder>
+    <name>Day 4 - Canyonlands</name>
+    <Placemark><name>Trailhead</name>
+      <Point><coordinates>-109.87,38.38,0</coordinates></Point></Placemark>
+  </Folder>
+</Document></kml>

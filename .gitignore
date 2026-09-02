@@ -1,0 +1,37 @@
+# --- Secrets & personal data -------------------------------------------------
+# Map IDs are effectively share-tokens: anyone with a My Maps `mid` or a
+# CalTopo map id can read that map. Never commit them.
+.env
+.env.*
+!.env.example
+config/sources.json
+config/*.local.json
+
+# Your actual trip data (SQLite DB, cached KML/GeoJSON, GPX drops, Takeout)
+data/
+imports/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.gpx
+*.kml
+*.kmz
+!**/fixtures/**
+
+# --- Build & tooling ---------------------------------------------------------
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+coverage/
+
+# --- OS / editor -------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+npm-debug.log*

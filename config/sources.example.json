@@ -1,0 +1,24 @@
+{
+  "$comment": [
+    "Copy to config/sources.json (gitignored) and fill in your own map ids.",
+    "Treat these ids as secrets: anyone holding one can read that map."
+  ],
+  "sources": [
+    {
+      "type": "mymaps",
+      "id": "roadtrip-main",
+      "label": "Road Trip — My Maps",
+      "mapId": "1AbCdEfGhIjKlMnOpQrStUvWxYz0123",
+      "enabled": true,
+      "$hint": "mapId is the `mid=` query param in your My Maps URL. The map must be shared as 'anyone with the link can view'."
+    },
+    {
+      "type": "caltopo",
+      "id": "backcountry-routes",
+      "label": "CalTopo — Backcountry Routes",
+      "mapId": "ABC12",
+      "enabled": true,
+      "$hint": "mapId is the short code in https://caltopo.com/m/<mapId>. The map must be shared publicly / via link."
+    }
+  ]
+}

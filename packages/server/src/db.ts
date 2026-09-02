@@ -1,0 +1,204 @@
+import Database from "better-sqlite3";
+import { createHash } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { DATA_DIR, DB_PATH } from "./config.js";
+import type { NormalizedFeature, NormalizedLayer, SourceType } from "./types.js";
+
+mkdirSync(DATA_DIR, { recursive: true });
+
+export const db = new Database(DB_PATH);
+db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS layers (
+  id          TEXT PRIMARY KEY,
+  source      TEXT NOT NULL,
+  source_key  TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  color       TEXT,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  updated_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS features (
+  id          TEXT PRIMARY KEY,
+  source      TEXT NOT NULL,
+  source_key  TEXT NOT NULL,
+  source_id   TEXT,
+  layer_id    TEXT,
+  name        TEXT,
+  description TEXT,
+  color       TEXT,
+  geom_type   TEXT NOT NULL,
+  geometry    TEXT NOT NULL,
+  props       TEXT NOT NULL,
+  raw         TEXT NOT NULL,
+  minx REAL, miny REAL, maxx REAL, maxy REAL,
+  updated_at  TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_features_layer  ON features(layer_id);
+CREATE INDEX IF NOT EXISTS idx_features_source ON features(source_key);
+CREATE INDEX IF NOT EXISTS idx_layers_source   ON layers(source_key);
+
+CREATE TABLE IF NOT EXISTS meta (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+`);
+
+/** Deterministic ids so re-syncing a map does not churn every row. */
+export function stableId(...parts: (string | null | undefined)[]): string {
+  return createHash("sha1")
+    .update(parts.map((p) => p ?? "").join("|"))
+    .digest("hex")
+    .slice(0, 16);
+}
+
+function bbox(geom: GeoJSON.Geometry): [number, number, number, number] {
+  let minx = Infinity;
+  let miny = Infinity;
+  let maxx = -Infinity;
+  let maxy = -Infinity;
+
+  const walk = (c: unknown): void => {
+    if (!Array.isArray(c)) return;
+    if (typeof c[0] === "number" && typeof c[1] === "number") {
+      const [x, y] = c as [number, number];
+      if (x < minx) minx = x;
+      if (y < miny) miny = y;
+      if (x > maxx) maxx = x;
+      if (y > maxy) maxy = y;
+      return;
+    }
+    for (const child of c) walk(child);
+  };
+
+  if (geom.type === "GeometryCollection") {
+    geom.geometries.forEach((g) => walk((g as { coordinates?: unknown }).coordinates));
+  } else {
+    walk((geom as { coordinates?: unknown }).coordinates);
+  }
+  return Number.isFinite(minx) ? [minx, miny, maxx, maxy] : [0, 0, 0, 0];
+}
+
+const delLayers = db.prepare(`DELETE FROM layers WHERE source_key = ?`);
+const delFeatures = db.prepare(`DELETE FROM features WHERE source_key = ?`);
+
+const insLayer = db.prepare(`
+  INSERT INTO layers (id, source, source_key, name, color, sort_order, updated_at)
+  VALUES (@id, @source, @sourceKey, @name, @color, @sortOrder, @updatedAt)
+  ON CONFLICT(id) DO UPDATE SET
+    name = excluded.name, color = excluded.color,
+    sort_order = excluded.sort_order, updated_at = excluded.updated_at
+`);
+
+const insFeature = db.prepare(`
+  INSERT INTO features (id, source, source_key, source_id, layer_id, name, description,
+                        color, geom_type, geometry, props, raw, minx, miny, maxx, maxy, updated_at)
+  VALUES (@id, @source, @sourceKey, @sourceId, @layerId, @name, @description,
+          @color, @geomType, @geometry, @props, @raw, @minx, @miny, @maxx, @maxy, @updatedAt)
+  ON CONFLICT(id) DO UPDATE SET
+    layer_id = excluded.layer_id, name = excluded.name, description = excluded.description,
+    color = excluded.color, geometry = excluded.geometry, props = excluded.props,
+    raw = excluded.raw, minx = excluded.minx, miny = excluded.miny,
+    maxx = excluded.maxx, maxy = excluded.maxy, updated_at = excluded.updated_at
+`);
+
+/**
+ * Replaces everything belonging to one source, atomically. Scoping the delete
+ * to `source_key` is what lets you re-sync a single My Maps map without
+ * touching CalTopo data or hand-imported GPX tracks.
+ */
+export const replaceSource = db.transaction(
+  (sourceKey: string, layers: NormalizedLayer[], features: NormalizedFeature[]) => {
+    const updatedAt = new Date().toISOString();
+    delFeatures.run(sourceKey);
+    delLayers.run(sourceKey);
+
+    for (const l of layers) {
+      insLayer.run({ ...l, updatedAt });
+    }
+    for (const f of features) {
+      const [minx, miny, maxx, maxy] = bbox(f.geometry);
+      insFeature.run({
+        id: f.id,
+        source: f.source,
+        sourceKey: f.sourceKey,
+        sourceId: f.sourceId,
+        layerId: f.layerId,
+        name: f.name,
+        description: f.description,
+        color: f.color,
+        geomType: f.geometry.type,
+        geometry: JSON.stringify(f.geometry),
+        props: JSON.stringify(f.props),
+        raw: JSON.stringify(f.raw),
+        minx,
+        miny,
+        maxx,
+        maxy,
+        updatedAt,
+      });
+    }
+  },
+);
+
+export interface LayerRow {
+  id: string;
+  source: SourceType;
+  source_key: string;
+  name: string;
+  color: string | null;
+  sort_order: number;
+  updated_at: string;
+  feature_count: number;
+}
+
+export function listLayers(): LayerRow[] {
+  return db
+    .prepare(
+      `SELECT l.*, (SELECT COUNT(*) FROM features f WHERE f.layer_id = l.id) AS feature_count
+       FROM layers l
+       ORDER BY l.source_key, l.sort_order, l.name`,
+    )
+    .all() as LayerRow[];
+}
+
+export function featureCollection(layerIds?: string[]): GeoJSON.FeatureCollection {
+  const rows = (
+    layerIds?.length
+      ? db
+          .prepare(
+            `SELECT * FROM features WHERE layer_id IN (${layerIds.map(() => "?").join(",")})`,
+          )
+          .all(...layerIds)
+      : db.prepare(`SELECT * FROM features`).all()
+  ) as Record<string, string>[];
+
+  return {
+    type: "FeatureCollection",
+    features: rows.map((r) => ({
+      type: "Feature" as const,
+      id: r.id,
+      geometry: JSON.parse(r.geometry!) as GeoJSON.Geometry,
+      properties: {
+        ...(JSON.parse(r.props!) as Record<string, unknown>),
+        id: r.id,
+        source: r.source,
+        sourceKey: r.source_key,
+        layerId: r.layer_id,
+        name: r.name,
+        description: r.description,
+        color: r.color,
+      },
+    })),
+  };
+}
+
+export function stats() {
+  const f = db.prepare(`SELECT COUNT(*) AS n FROM features`).get() as { n: number };
+  const l = db.prepare(`SELECT COUNT(*) AS n FROM layers`).get() as { n: number };
+  return { features: f.n, layers: l.n };
+}

@@ -1,0 +1,19 @@
+{
+  "status": "ok",
+  "result": {
+    "state": {
+      "features": [
+        { "id": "f1", "properties": { "class": "Folder", "title": "Hiking Routes" } },
+        { "id": "f2", "properties": { "class": "Folder", "title": "Water Sources" } },
+        { "id": "m1", "geometry": { "type": "Point", "coordinates": [-109.9, 38.4] },
+          "properties": { "class": "Marker", "title": "Spring", "folderId": "f2",
+                          "marker-symbol": "water", "description": "Reliable year-round" } },
+        { "id": "s1", "geometry": { "type": "LineString", "coordinates": [[-109.8,38.3],[-109.7,38.35]] },
+          "properties": { "class": "Shape", "title": "Ridge Route", "folderId": "f1",
+                          "stroke": "#FF0000", "distance": 4823.5 } },
+        { "id": "m2", "geometry": { "type": "Point", "coordinates": [-110.1, 38.2] },
+          "properties": { "class": "Marker", "title": "Unfiled waypoint" } }
+      ]
+    }
+  }
+}
