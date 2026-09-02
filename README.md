@@ -91,12 +91,35 @@ styling/templating pass, so nothing is lost.
 Because color lives on the feature, the map's paint spec stays static and
 toggling a layer is just a `setData` call.
 
+## Renaming a source
+
+A source's `id` is the database key: layers and features are stored against it,
+and deletes are scoped to it. Renaming one in `sources.json` therefore strands
+its old rows, which would otherwise show in the sidebar as a stale duplicate.
+
+Nothing is lost by renaming — the DB is a rebuildable cache, the upstream maps
+are the source of truth, and layer visibility is client-side state. Just prune
+afterwards:
+
+```bash
+# 1. edit config/sources.json, changing "id" (keep "mapId" the same)
+npm run sync              # warns: "roadtrip-main" is no longer in sources.json
+npm run sync -- --prune   # re-syncs under the new id and drops the old rows
+```
+
+`label` is display-only and can be changed freely at any time — no re-sync
+needed, since it is joined on read.
+
+A source turned off with `"enabled": false` is still a known source and is
+never treated as an orphan.
+
 ## Commands
 
 | Command | Does |
 | --- | --- |
 | `npm run dev` | API + UI together |
 | `npm run sync` | Sync all sources from the CLI |
+| `npm run sync -- --prune` | Sync, then drop rows whose source id is gone from `sources.json` |
 | `npm test` | Fixture-backed connector tests (no network, no real map ids) |
 | `npm run typecheck` | `tsc --noEmit` across both workspaces |
 

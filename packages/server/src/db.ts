@@ -233,6 +233,45 @@ export function featureCollection(layerIds?: string[]): GeoJSON.FeatureCollectio
   };
 }
 
+export interface StoredSource {
+  source_key: string;
+  layers: number;
+  features: number;
+}
+
+/**
+ * Every source_key the DB holds, including ones no longer in sources.json.
+ * Renaming a source's `id` leaves its old rows behind, since deletes are
+ * scoped to source_key — this is how those orphans are found.
+ */
+export function listStoredSources(): StoredSource[] {
+  return db
+    .prepare(
+      `SELECT k.source_key,
+              (SELECT COUNT(*) FROM layers   WHERE source_key = k.source_key) AS layers,
+              (SELECT COUNT(*) FROM features WHERE source_key = k.source_key) AS features
+       FROM (SELECT source_key FROM layers UNION SELECT source_key FROM features) k
+       ORDER BY k.source_key`,
+    )
+    .all() as StoredSource[];
+}
+
+/** Drops one source's rows entirely. Used to clear orphans after a rename. */
+export const deleteSource = db.transaction((sourceKey: string) => {
+  const features = delFeatures.run(sourceKey).changes;
+  const layers = delLayers.run(sourceKey).changes;
+  return { sourceKey, layers, features };
+});
+
+/**
+ * Source keys present in the DB but absent from sources.json. Disabled sources
+ * are deliberately not orphans — turning a map off should not delete it.
+ */
+export function findOrphanedSources(knownKeys?: Set<string>): StoredSource[] {
+  const known = knownKeys ?? new Set(loadSources(true).map((s) => s.id));
+  return listStoredSources().filter((s) => !known.has(s.source_key));
+}
+
 export function stats() {
   const f = db.prepare(`SELECT COUNT(*) AS n FROM features`).get() as { n: number };
   const l = db.prepare(`SELECT COUNT(*) AS n FROM layers`).get() as { n: number };

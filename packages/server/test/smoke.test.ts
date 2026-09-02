@@ -185,6 +185,51 @@ test("layers carry service and map labels, ordered by sources.json", async () =>
   );
 });
 
+test("renaming a source id strands its old rows until pruned", async () => {
+  const { syncSource } = await import("../src/connectors/index.js");
+  const { findOrphanedSources, deleteSource, listStoredSources, stats } = await import(
+    "../src/db.js"
+  );
+
+  await syncSource(MYMAPS); // id: "trip"
+  await syncSource(CALTOPO); // id: "backcountry"
+  const before = stats().features;
+
+  // Rename "trip" -> "utah-basecamp" in sources.json. Deletes are scoped to
+  // source_key, so the old rows are not matched by the next sync.
+  const renamed = new Set(["utah-basecamp", "backcountry"]);
+  const orphans = findOrphanedSources(renamed);
+
+  assert.deepEqual(
+    orphans.map((o) => o.source_key),
+    ["trip"],
+    "the old id must surface as an orphan",
+  );
+  assert.ok(orphans[0]!.features > 0, "orphan should still hold its features");
+
+  // A disabled source is still a known source and must never be pruned.
+  const withDisabled = findOrphanedSources(new Set(["trip", "backcountry"]));
+  assert.equal(withDisabled.length, 0);
+
+  const removed = deleteSource("trip");
+  assert.equal(removed.features, orphans[0]!.features);
+  assert.equal(stats().features, before - removed.features);
+  assert.deepEqual(
+    listStoredSources().map((s) => s.source_key),
+    ["backcountry"],
+    "pruning must not touch the other source",
+  );
+
+  // Re-syncing under the new id rebuilds from upstream: nothing is lost by
+  // renaming, because the DB is a cache and the maps are the source of truth.
+  await syncSource({ ...MYMAPS, id: "utah-basecamp" });
+  assert.equal(stats().features, before, "re-sync under the new id restores the count");
+  assert.deepEqual(
+    listStoredSources().map((s) => s.source_key).sort(),
+    ["backcountry", "utah-basecamp"],
+  );
+});
+
 test("a failing source reports the error without leaking the map id", async () => {
   const { syncSource } = await import("../src/connectors/index.js");
   globalThis.fetch = (async () => new Response("nope", { status: 404 })) as typeof fetch;

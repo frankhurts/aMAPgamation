@@ -19,8 +19,12 @@ const VALID_TYPES: SourceType[] = ["mymaps", "caltopo", "gpx", "takeout"];
 /**
  * Reads config/sources.json. Missing file is not an error — a fresh clone has
  * no map ids, and the server should still boot so the UI can say so.
+ *
+ * `includeDisabled` matters for pruning: a source turned off with
+ * `"enabled": false` is still a known source, and must not be mistaken for an
+ * orphan and deleted.
  */
-export function loadSources(): SourceConfig[] {
+export function loadSources(includeDisabled = false): SourceConfig[] {
   if (!existsSync(SOURCES_PATH)) return [];
 
   let parsed: unknown;
@@ -45,7 +49,7 @@ export function loadSources(): SourceConfig[] {
         VALID_TYPES.includes(c.type as SourceType) &&
         typeof c?.id === "string" &&
         typeof c?.mapId === "string" &&
-        c.enabled !== false
+        (includeDisabled || c.enabled !== false)
       );
     })
     .map((s) => ({ ...s, label: s.label ?? s.id }));
