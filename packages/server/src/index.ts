@@ -16,14 +16,20 @@ await app.register(cors, { origin: true });
 app.get("/api/health", async () => ({ ok: true, ...stats() }));
 
 /** Map ids are redacted so a screenshot of the UI leaks nothing reusable. */
-app.get("/api/sources", async () => ({
-  sources: loadSources().map((s) => ({
-    id: s.id,
-    type: s.type,
-    label: s.label,
-    mapId: redactMapId(s.mapId),
-  })),
-}));
+app.get("/api/sources", async (_req, reply) => {
+  try {
+    return {
+      sources: loadSources().map((s) => ({
+        id: s.id,
+        type: s.type,
+        label: s.label,
+        mapId: redactMapId(s.mapId),
+      })),
+    };
+  } catch (err) {
+    return reply.code(400).send({ error: (err as Error).message });
+  }
+});
 
 app.get("/api/layers", async () => ({ layers: listLayers() }));
 
@@ -50,7 +56,14 @@ app.get<{ Querystring: { layers?: string } }>("/api/features", async (req) => {
 });
 
 app.post<{ Querystring: { source?: string } }>("/api/sync", async (req, reply) => {
-  const sources = loadSources();
+  // A malformed or duplicate-id config is a user-fixable problem, so return
+  // the explanation rather than a 500.
+  let sources;
+  try {
+    sources = loadSources();
+  } catch (err) {
+    return reply.code(400).send({ error: (err as Error).message });
+  }
   if (sources.length === 0) {
     return reply.code(400).send({
       error: "No sources configured. Copy config/sources.example.json to config/sources.json.",

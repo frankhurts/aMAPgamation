@@ -4,7 +4,14 @@ import { deleteSource, findOrphanedSources, stats } from "../db.js";
 
 const prune = process.argv.includes("--prune");
 
-const sources = loadSources();
+let sources;
+try {
+  sources = loadSources();
+} catch (err) {
+  console.error(`\n  Config error: ${(err as Error).message}\n`);
+  process.exit(1);
+}
+
 if (sources.length === 0) {
   console.error("No sources configured.");
   console.error("Copy config/sources.example.json to config/sources.json and add your map ids.");

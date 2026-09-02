@@ -246,3 +246,30 @@ test("a failing source reports the error without leaking the map id", async () =
   assert.match(result.error!, /anyone with the link/);
   assert.doesNotMatch(result.error!, /SUPERSECRETMAPID12345/, "map id leaked into error");
 });
+
+test("duplicate source ids are refused", async () => {
+  const { parseSources } = await import("../src/config.js");
+
+  // Two sources sharing an id would overwrite each other on every sync,
+  // because replaceSource deletes by source_key before inserting.
+  assert.throws(
+    () =>
+      parseSources({
+        sources: [
+          { type: "mymaps", id: "Utah", label: "Utah", mapId: "a" },
+          { type: "caltopo", id: "Utah", label: "Utah", mapId: "b" },
+        ],
+      }),
+    /Duplicate source id "Utah"/,
+  );
+
+  // Labels are display-only and may repeat.
+  const ok = parseSources({
+    sources: [
+      { type: "mymaps", id: "utah-basecamp", label: "Utah", mapId: "a" },
+      { type: "caltopo", id: "utah-backcountry", label: "Utah", mapId: "b" },
+    ],
+  });
+  assert.equal(ok.length, 2);
+  assert.deepEqual(ok.map((s) => s.label), ["Utah", "Utah"]);
+});

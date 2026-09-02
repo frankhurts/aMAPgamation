@@ -181,7 +181,7 @@ export function listLayers(mapLabels?: Map<string, string>): LayerRow[] {
     )
     .all() as Omit<LayerRow, "source_label" | "map_label">[];
 
-  const labels = mapLabels ?? new Map(loadSources().map((s) => [s.id, s.label]));
+  const labels = mapLabels ?? configuredLabels();
 
   // Maps appear in the order they are listed in sources.json rather than
   // alphabetically by config key, so the sidebar mirrors the file the user
@@ -233,6 +233,21 @@ export function featureCollection(layerIds?: string[]): GeoJSON.FeatureCollectio
   };
 }
 
+/**
+ * Map labels for display. A broken config degrades to showing config keys
+ * rather than blanking the sidebar: labels are cosmetic, so you can still read
+ * already-synced data while fixing sources.json.
+ *
+ * Deliberately NOT used by findOrphanedSources — see the note there.
+ */
+function configuredLabels(): Map<string, string> {
+  try {
+    return new Map(loadSources(true).map((s) => [s.id, s.label]));
+  } catch {
+    return new Map();
+  }
+}
+
 export interface StoredSource {
   source_key: string;
   layers: number;
@@ -268,6 +283,10 @@ export const deleteSource = db.transaction((sourceKey: string) => {
  * are deliberately not orphans — turning a map off should not delete it.
  */
 export function findOrphanedSources(knownKeys?: Set<string>): StoredSource[] {
+  // No error swallowing here, unlike configuredLabels. If the config cannot be
+  // read, the set of known sources is unknown, and treating an unknown set as
+  // empty would mark every source an orphan — arming --prune to wipe the
+  // database. A config error must propagate and stop the caller.
   const known = knownKeys ?? new Set(loadSources(true).map((s) => s.id));
   return listStoredSources().filter((s) => !known.has(s.source_key));
 }

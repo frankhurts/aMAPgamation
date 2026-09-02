@@ -36,12 +36,20 @@ export function loadSources(includeDisabled = false): SourceConfig[] {
     );
   }
 
+  return parseSources(parsed, includeDisabled);
+}
+
+/**
+ * Validates the parsed sources.json. Split from file reading so the rules can
+ * be tested without touching the real config.
+ */
+export function parseSources(parsed: unknown, includeDisabled = false): SourceConfig[] {
   const raw = (parsed as { sources?: unknown })?.sources;
   if (!Array.isArray(raw)) {
     throw new Error('config/sources.json must contain a "sources" array.');
   }
 
-  return raw
+  const sources = raw
     .filter((s): s is SourceConfig => {
       const c = s as Partial<SourceConfig>;
       return (
@@ -53,6 +61,24 @@ export function loadSources(includeDisabled = false): SourceConfig[] {
       );
     })
     .map((s) => ({ ...s, label: s.label ?? s.id }));
+
+  // `id` is the database key: rows are stored against it and deletes are
+  // scoped to it. Two sources sharing an id silently overwrite each other on
+  // every sync, so this is refused rather than tolerated.
+  const seen = new Set<string>();
+  for (const s of sources) {
+    if (seen.has(s.id)) {
+      throw new Error(
+        `Duplicate source id "${s.id}" in config/sources.json. ` +
+          `Each source needs a unique "id" — it is the database key, so two ` +
+          `sources sharing one overwrite each other's data on every sync. ` +
+          `Note that "label" is the display name and may repeat freely.`,
+      );
+    }
+    seen.add(s.id);
+  }
+
+  return sources;
 }
 
 /** Map ids are share tokens — show enough to identify, not enough to reuse. */
