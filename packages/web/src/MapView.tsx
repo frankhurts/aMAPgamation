@@ -71,7 +71,11 @@ function bounds(fc: GeoJSON.FeatureCollection): maplibregl.LngLatBounds | null {
   const walk = (c: unknown): void => {
     if (!Array.isArray(c)) return;
     if (typeof c[0] === "number" && typeof c[1] === "number") {
-      b.extend(c as [number, number]);
+      // Slice to [lng, lat]. KML positions carry altitude and CalTopo adds a
+      // fourth ordinate; passing the whole array to extend() makes MapLibre
+      // misread it and collapse the east edge to longitude 0, which fits the
+      // map to everything between here and the prime meridian.
+      b.extend([c[0], c[1]] as [number, number]);
       any = true;
       return;
     }
@@ -87,6 +91,15 @@ export function MapView({ data, visibleLayerIds, basemap, fitKey }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
 
+  /**
+   * Which map instance already has the current basemap applied. The
+   * constructor sets a style, so re-applying it immediately would abort the
+   * in-flight load ("Style is not done loading") and leave the map blank.
+   * Keying on the instance rather than a boolean also survives StrictMode's
+   * mount/unmount/remount, which builds a second map.
+   */
+  const styledFor = useRef<MLMap | null>(null);
+
   const filtered = useMemo<GeoJSON.FeatureCollection>(
     () => ({
       type: "FeatureCollection",
@@ -96,6 +109,12 @@ export function MapView({ data, visibleLayerIds, basemap, fitKey }: Props) {
     }),
     [data, visibleLayerIds],
   );
+
+  // Latest data, readable from map event listeners without making them a
+  // dependency — listeners registered at mount would otherwise close over the
+  // first render's empty FeatureCollection.
+  const dataRef = useRef(filtered);
+  dataRef.current = filtered;
 
   useEffect(() => {
     if (!container.current || map.current) return;
@@ -116,7 +135,7 @@ export function MapView({ data, visibleLayerIds, basemap, fitKey }: Props) {
       "top-right",
     );
 
-    m.on("load", () => addDataLayers(m, filtered));
+    m.on("load", () => addDataLayers(m, dataRef.current));
 
     for (const id of [`${SRC}-fill`, `${SRC}-line`, `${SRC}-point`]) {
       m.on("mouseenter", id, () => (m.getCanvas().style.cursor = "pointer"));
@@ -151,8 +170,15 @@ export function MapView({ data, visibleLayerIds, basemap, fitKey }: Props) {
   useEffect(() => {
     const m = map.current;
     if (!m) return;
+
+    // A freshly built map already carries this style from the constructor.
+    if (styledFor.current !== m) {
+      styledFor.current = m;
+      return;
+    }
+
     m.setStyle(BASEMAPS[basemap].style);
-    const onStyle = () => addDataLayers(m, filtered);
+    const onStyle = () => addDataLayers(m, dataRef.current);
     m.once("styledata", onStyle);
     return () => void m.off("styledata", onStyle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
