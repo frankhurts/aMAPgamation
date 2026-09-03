@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="onX Offroad" xmlns="http://www.topografix.com/GPX/1/1">
+  <wpt lat="38.5733" lon="-109.5498">
+    <ele>1420.5</ele>
+    <time>2026-08-14T17:22:05Z</time>
+    <name>Dispersed site 4</name>
+    <desc>BLM, existing fire ring, no services</desc>
+    <sym>Campground</sym>
+  </wpt>
+  <wpt lat="38.6011" lon="-109.6132">
+    <name>Water cache</name>
+    <cmt>Buried behind the cairn</cmt>
+    <sym>Water Source</sym>
+  </wpt>
+</gpx>

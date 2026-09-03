@@ -1,7 +1,8 @@
 import { readFileSync, existsSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { resolve, dirname, basename, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
+import { isFileSource } from "./types.js";
 import type { SourceConfig, SourceType } from "./types.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -51,14 +52,17 @@ export function parseSources(parsed: unknown, includeDisabled = false): SourceCo
 
   const sources = raw
     .filter((s): s is SourceConfig => {
-      const c = s as Partial<SourceConfig>;
-      return (
-        typeof c?.type === "string" &&
-        VALID_TYPES.includes(c.type as SourceType) &&
-        typeof c?.id === "string" &&
-        typeof c?.mapId === "string" &&
-        (includeDisabled || c.enabled !== false)
-      );
+      const c = s as Partial<SourceConfig> & { mapId?: unknown; path?: unknown };
+      if (typeof c?.type !== "string" || !VALID_TYPES.includes(c.type as SourceType)) return false;
+      if (typeof c?.id !== "string") return false;
+      if (!includeDisabled && c.enabled === false) return false;
+
+      // Remote sources are addressed by map id, file sources by path. A source
+      // missing its addressing field cannot be fetched, so it is dropped here
+      // rather than failing later with a confusing connector error.
+      return c.type === "gpx" || c.type === "takeout"
+        ? typeof c.path === "string" && c.path.length > 0
+        : typeof c.mapId === "string" && c.mapId.length > 0;
     })
     .map((s) => ({ ...s, label: s.label ?? s.id }));
 
@@ -85,4 +89,24 @@ export function parseSources(parsed: unknown, includeDisabled = false): SourceCo
 export function redactMapId(mapId: string): string {
   if (mapId.length <= 6) return "***";
   return `${mapId.slice(0, 3)}***${mapId.slice(-2)}`;
+}
+
+/**
+ * A safe one-line identifier for logs and error messages. Map ids are
+ * redacted, and file sources show only a basename so a home directory path
+ * never ends up in a pasted stack trace.
+ */
+export function describeSource(cfg: SourceConfig): string {
+  return isFileSource(cfg)
+    ? `path ${redactPath(cfg.path)}`
+    : `map ${redactMapId(cfg.mapId)}`;
+}
+
+/**
+ * Paths reach users through error messages. A repo-relative path is safe and
+ * useful to echo back ("imports/onx"), but an absolute one carries a home
+ * directory and username, so only its leaf is shown.
+ */
+export function redactPath(p: string): string {
+  return isAbsolute(p) ? basename(p) : p;
 }

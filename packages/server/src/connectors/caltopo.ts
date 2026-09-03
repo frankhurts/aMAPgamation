@@ -1,6 +1,6 @@
 import { stableId } from "../db.js";
 import { applyLayerColors, normalizeColor, paletteColor } from "./palette.js";
-import type { NormalizedFeature, NormalizedLayer, SourceConfig } from "../types.js";
+import type { NormalizedFeature, NormalizedLayer, RemoteSourceConfig } from "../types.js";
 
 /**
  * CalTopo's map export. `since/0` means "all state from the beginning", which
@@ -31,7 +31,7 @@ function extractFeatures(payload: unknown): CalTopoFeature[] {
 }
 
 export async function syncCalTopo(
-  cfg: SourceConfig,
+  cfg: RemoteSourceConfig,
 ): Promise<{ layers: NormalizedLayer[]; features: NormalizedFeature[] }> {
   const res = await fetch(apiUrl(cfg.mapId), {
     headers: {

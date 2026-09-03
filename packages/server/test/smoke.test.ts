@@ -273,3 +273,94 @@ test("duplicate source ids are refused", async () => {
   assert.equal(ok.length, 2);
   assert.deepEqual(ok.map((s) => s.label), ["Utah", "Utah"]);
 });
+
+const GPX = {
+  type: "gpx",
+  id: "onx",
+  label: "OnX",
+  path: "packages/server/test/fixtures/gpx",
+} as const;
+
+test("GPX import makes one layer per file", async () => {
+  const { syncGpx } = await import("../src/connectors/gpx.js");
+  const { layers, features } = await syncGpx(GPX);
+
+  // GPX has no folder concept, so the filename is the grouping. Sorted, so
+  // layer order does not shift between syncs.
+  assert.deepEqual(
+    layers.map((l) => l.name),
+    ["onx-tracks", "onx-waypoints"],
+  );
+  assert.equal(features.length, 4);
+
+  // Waypoints, tracks and routes must all come through.
+  assert.deepEqual(
+    features.map((f) => f.geometry.type).sort(),
+    ["LineString", "LineString", "Point", "Point"],
+  );
+
+  const camp = features.find((f) => f.name === "Dispersed site 4");
+  assert.equal(camp?.description, "BLM, existing fire ring, no services");
+  assert.equal(camp?.props["symbol"], "Campground");
+
+  // GPX splits free text across <desc> and <cmt>; this waypoint only has cmt.
+  const cache = features.find((f) => f.name === "Water cache");
+  assert.equal(cache?.description, "Buried behind the cairn");
+});
+
+test("GPX track colors survive Garmin's namespaced extension", async () => {
+  const { syncGpx } = await import("../src/connectors/gpx.js");
+  const { layers, features } = await syncGpx(GPX);
+
+  // togeojson flattens <gpxx:DisplayColor>Red</> to `gpxx_DisplayColor`, and
+  // the value is a name, not a hex.
+  const trail = features.find((f) => f.name === "Shafer Trail descent");
+  assert.equal(trail?.props["sourceColor"], "#ff0000");
+
+  // The layer adopts it rather than a palette color, and the uncolored route
+  // in the same file is brought into line.
+  const tracks = layers.find((l) => l.name === "onx-tracks")!;
+  assert.equal(tracks.color, "#ff0000");
+  assert.equal(features.find((f) => f.name === "Approach route")?.color, "#ff0000");
+
+  // A file with no color extension at all still falls back to the palette.
+  assert.equal(layers.find((l) => l.name === "onx-waypoints")!.color, "#3cb44b");
+});
+
+test("GPX reports actionable errors for bad paths", async () => {
+  const { syncSource } = await import("../src/connectors/index.js");
+
+  const missing = await syncSource({ ...GPX, id: "missing", path: "imports/nope" });
+  assert.equal(missing.ok, false);
+  assert.match(missing.error!, /No such path/);
+  // A repo-relative path is safe to echo back and is the useful thing to show.
+  assert.match(missing.error!, /imports\/nope/);
+
+  // Errors must name a basename, never a full home-directory path.
+  const absolute = await syncSource({
+    ...GPX,
+    id: "abs",
+    path: "/Users/someone/private/trips/secret-stuff",
+  });
+  assert.equal(absolute.ok, false);
+  assert.doesNotMatch(absolute.error!, /Users\/someone/, "leaked a filesystem path");
+  assert.match(absolute.error!, /secret-stuff/);
+});
+
+test("file sources need a path, remote sources need a mapId", async () => {
+  const { parseSources } = await import("../src/config.js");
+
+  // A gpx source with mapId but no path cannot be located, and vice versa.
+  const parsed = parseSources({
+    sources: [
+      { type: "gpx", id: "bad-gpx", label: "x", mapId: "abc" },
+      { type: "mymaps", id: "bad-map", label: "y", path: "imports/x" },
+      { type: "gpx", id: "good-gpx", label: "z", path: "imports/onx" },
+      { type: "mymaps", id: "good-map", label: "w", mapId: "abc" },
+    ],
+  });
+  assert.deepEqual(
+    parsed.map((s) => s.id),
+    ["good-gpx", "good-map"],
+  );
+});

@@ -7,7 +7,7 @@
     {
       "type": "mymaps",
       "id": "roadtrip-main",
-      "label": "Road Trip — My Maps",
+      "label": "Road Trip \u2014 My Maps",
       "mapId": "1AbCdEfGhIjKlMnOpQrStUvWxYz0123",
       "enabled": true,
       "$hint": "mapId is the `mid=` query param in your My Maps URL. The map must be shared as 'anyone with the link can view'."
@@ -15,10 +15,18 @@
     {
       "type": "caltopo",
       "id": "backcountry-routes",
-      "label": "CalTopo — Backcountry Routes",
+      "label": "CalTopo \u2014 Backcountry Routes",
       "mapId": "ABC12",
       "enabled": true,
       "$hint": "mapId is the short code in https://caltopo.com/m/<mapId>. The map must be shared publicly / via link."
+    },
+    {
+      "type": "gpx",
+      "id": "onx-utah",
+      "label": "OnX - Utah",
+      "path": "imports/onx",
+      "enabled": true,
+      "$hint": "A .gpx file, or a folder of them. Each file becomes one layer named after the filename. Export from OnX via Content > select > Export. Also reads Gaia, AllTrails and Strava exports. The imports/ folder is gitignored."
     }
   ]
 }

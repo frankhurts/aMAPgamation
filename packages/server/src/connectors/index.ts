@@ -1,12 +1,13 @@
 import { syncMyMaps } from "./mymaps.js";
 import { syncCalTopo } from "./caltopo.js";
+import { syncGpx } from "./gpx.js";
 import { replaceSource } from "../db.js";
-import { redactMapId } from "../config.js";
+import { describeSource } from "../config.js";
 import type { SourceConfig, SyncResult } from "../types.js";
 
 /**
- * Phase 1 ships mymaps + caltopo. gpx (OnX exports) and takeout (Google saved
- * places) land in Phase 2 and slot in here without touching anything else.
+ * takeout (Google saved places) is the remaining connector; it slots in here
+ * the same way, without touching anything else.
  */
 export async function syncSource(cfg: SourceConfig): Promise<SyncResult> {
   const started = Date.now();
@@ -20,6 +21,9 @@ export async function syncSource(cfg: SourceConfig): Promise<SyncResult> {
         break;
       case "caltopo":
         result = await syncCalTopo(cfg);
+        break;
+      case "gpx":
+        result = await syncGpx(cfg);
         break;
       default:
         throw new Error(`Connector "${cfg.type}" is not implemented yet (Phase 2).`);
@@ -39,7 +43,7 @@ export async function syncSource(cfg: SourceConfig): Promise<SyncResult> {
       ok: false,
       layers: 0,
       features: 0,
-      error: `${(err as Error).message} [map ${redactMapId(cfg.mapId)}]`,
+      error: `${(err as Error).message} [${describeSource(cfg)}]`,
       durationMs: Date.now() - started,
     };
   }

@@ -20,14 +20,35 @@ export const SOURCE_LABELS: Record<SourceType, string> = {
   takeout: "Google Saved Places",
 };
 
-export interface SourceConfig {
-  type: SourceType;
+interface SourceConfigBase {
   /** Stable local key, used to namespace ids. Safe to appear in the UI. */
   id: string;
   label: string;
-  /** Share-token-ish id from the upstream service. Never logged in full. */
-  mapId: string;
   enabled?: boolean;
+}
+
+/** Sources fetched from a service by a share-token-ish map id. */
+export interface RemoteSourceConfig extends SourceConfigBase {
+  type: "mymaps" | "caltopo";
+  /** Never logged in full — see redactMapId. */
+  mapId: string;
+}
+
+/**
+ * Sources read from files on disk. OnX has no API and its terms forbid
+ * scraping, so its data arrives as exported GPX; the same connector covers
+ * Gaia, AllTrails and Strava exports.
+ */
+export interface FileSourceConfig extends SourceConfigBase {
+  type: "gpx" | "takeout";
+  /** File or directory, absolute or relative to the repo root. */
+  path: string;
+}
+
+export type SourceConfig = RemoteSourceConfig | FileSourceConfig;
+
+export function isFileSource(c: SourceConfig): c is FileSourceConfig {
+  return c.type === "gpx" || c.type === "takeout";
 }
 
 export interface NormalizedLayer {

@@ -1,6 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import { PORT, loadSources, redactMapId } from "./config.js";
+import { PORT, loadSources, describeSource } from "./config.js";
 import {
   deleteSource,
   featureCollection,
@@ -23,7 +23,7 @@ app.get("/api/sources", async (_req, reply) => {
         id: s.id,
         type: s.type,
         label: s.label,
-        mapId: redactMapId(s.mapId),
+        ref: describeSource(s),
       })),
     };
   } catch (err) {

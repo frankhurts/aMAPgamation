@@ -15,7 +15,8 @@ pipeline rather than a live aggregator:
 | --- | --- | --- |
 | Google My Maps | KML export endpoint (`/maps/d/kml?forcekml=1&mid=…`), folders preserved as layers | Phase 1 |
 | CalTopo | `api/v1/map/<id>/since/0` GeoJSON, folders preserved as layers | Phase 1 |
-| OnX Backcountry / Offroad | GPX/KML export from the app. No API, and their ToS forbids scraping | Phase 2 |
+| OnX Backcountry / Offroad | GPX export from the app, dropped into `imports/`. No API, and their ToS forbids scraping | Phase 1 |
+| Gaia / AllTrails / Strava | Same GPX connector — any GPX export works | Phase 1 |
 | Google Maps saved places | Google Takeout, hydrated via the Places API | Phase 2 |
 | BLM / USFS / PAD-US public land | Direct from the agencies' ArcGIS services — the data OnX resells is public domain | Phase 3 |
 
@@ -90,6 +91,28 @@ styling/templating pass, so nothing is lost.
 
 Because color lives on the feature, the map's paint spec stays static and
 toggling a layer is just a `setData` call.
+
+## Importing GPX (OnX, Gaia, AllTrails, Strava)
+
+OnX has no API and its terms forbid scraping, so its data comes out as GPX.
+Export from the app, drop the files in `imports/`, and point a source at them:
+
+```json
+{ "type": "gpx", "id": "onx-utah", "label": "OnX - Utah", "path": "imports/onx" }
+```
+
+`path` takes a single `.gpx` file or a folder of them, relative to the repo
+root. **Each file becomes one layer, named after the filename** — GPX has no
+folder concept, so the filename is the only grouping it offers, and it is the
+part you control. Rename `moab-dispersed.gpx` and you rename the layer.
+
+Waypoints, tracks and routes are all imported. `<desc>` and `<cmt>` both feed
+the popup description, since exporters disagree about which to use. Garmin's
+`<gpxx:DisplayColor>` extension is honoured, so a track exported as Red stays
+red instead of taking a palette color.
+
+`imports/` and loose `*.gpx` files are gitignored — your waypoints never reach
+GitHub.
 
 ## Renaming a source
 
@@ -198,7 +221,7 @@ is what makes the whole thing work with no signal.
 
 ## Roadmap
 
-- **Phase 2** — GPX import (OnX exports), Google Takeout + Places hydration
+- **Phase 2** — Google Takeout + Places hydration (GPX import: done)
 - **Phase 3** — PAD-US / BLM / USFS MVUM clipped to route, built into PMTiles
 - **Phase 4** — Trip → Day → Stop model, offline PWA packaging
 

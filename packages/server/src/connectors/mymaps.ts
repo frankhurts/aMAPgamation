@@ -2,7 +2,7 @@ import { DOMParser } from "@xmldom/xmldom";
 import * as toGeoJSON from "@tmcw/togeojson";
 import { stableId } from "../db.js";
 import { applyLayerColors, normalizeColor, paletteColor } from "./palette.js";
-import type { NormalizedFeature, NormalizedLayer, SourceConfig } from "../types.js";
+import type { NormalizedFeature, NormalizedLayer, RemoteSourceConfig } from "../types.js";
 
 /**
  * Google My Maps has no API, but every map exposes a KML export. `forcekml=1`
@@ -50,7 +50,7 @@ function featureColor(props: Record<string, unknown>): string | null {
 }
 
 export async function syncMyMaps(
-  cfg: SourceConfig,
+  cfg: RemoteSourceConfig,
 ): Promise<{ layers: NormalizedLayer[]; features: NormalizedFeature[] }> {
   const res = await fetch(kmlUrl(cfg.mapId), {
     redirect: "follow",

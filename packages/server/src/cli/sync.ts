@@ -1,4 +1,4 @@
-import { loadSources, redactMapId } from "../config.js";
+import { loadSources, describeSource } from "../config.js";
 import { syncAll } from "../connectors/index.js";
 import { deleteSource, findOrphanedSources, stats } from "../db.js";
 
@@ -20,7 +20,7 @@ if (sources.length === 0) {
 
 console.log(`Syncing ${sources.length} source(s)...\n`);
 for (const s of sources) {
-  console.log(`  ${s.type.padEnd(8)} ${s.label}  (map ${redactMapId(s.mapId)})`);
+  console.log(`  ${s.type.padEnd(8)} ${s.label}  (${describeSource(s)})`);
 }
 console.log("");
 

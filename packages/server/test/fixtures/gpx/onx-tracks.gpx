@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="onX Backcountry"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
+  <trk>
+    <name>Shafer Trail descent</name>
+    <desc>4WD, high clearance</desc>
+    <extensions>
+      <gpxx:TrackExtension><gpxx:DisplayColor>Red</gpxx:DisplayColor></gpxx:TrackExtension>
+    </extensions>
+    <trkseg>
+      <trkpt lat="38.5000" lon="-109.5000"><ele>1300</ele></trkpt>
+      <trkpt lat="38.5200" lon="-109.5400"><ele>1350</ele></trkpt>
+      <trkpt lat="38.5400" lon="-109.5800"><ele>1400</ele></trkpt>
+    </trkseg>
+  </trk>
+  <rte>
+    <name>Approach route</name>
+    <rtept lat="38.4000" lon="-109.4000"/>
+    <rtept lat="38.4500" lon="-109.4500"/>
+  </rte>
+</gpx>
