@@ -1,0 +1,60 @@
+# Day 1 (Aug 20th): Ottawa, ON -> Windsor, ON
+https://www.google.com/maps/dir/370+Lyon+St.+N,+Ottawa,+ON+K1R+5X1,+Canada/Tilbury,+Chatham-Kent,+ON,+Canada/@42.2780232,-82.4671369,13.95z/data=!4m14!4m13!1m5!1m1!1s0x4cce05b2bfd8bb6d:0x41eaeaf95034b64c!2m2!1d-75.6995709!2d45.4121148!1m5!1m1!1s0x883ab3b2e00fedf7:0x69ef4e438d8d81ff!2m2!1d-82.4292312!2d42.2643968!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 2 (Aug 21st): Windsor, ON -> Iowa 80 Truck Stop, IA
+https://www.google.com/maps/dir/Tilbury,+Chatham-Kent,+ON,+Canada/Iowa+80+Trucking+Museum,+505+Sterling+Dr,+Walcott,+IA+52773/@41.7171649,-89.9116504,8.24z/data=!4m14!4m13!1m5!1m1!1s0x883ab3b2e00fedf7:0x69ef4e438d8d81ff!2m2!1d-82.4292312!2d42.2643968!1m5!1m1!1s0x87e3b843ab49378f:0x98fa3ed88efbca79!2m2!1d-90.7811541!2d41.6207373!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 3 (Aug 22nd): Iowa 80 Truck Stop, Iowa -> Montrose City Campground, SD
+https://www.google.com/maps/dir/Iowa+80+Trucking+Museum,+505+Sterling+Dr,+Walcott,+IA+52773/Montrose+City+Campground,+206+Clark+St,+Montrose,+SD+57048/@42.5717835,-96.6220632,7z/data=!4m14!4m13!1m5!1m1!1s0x87e3b843ab49378f:0x98fa3ed88efbca79!2m2!1d-90.7811541!2d41.6207373!1m5!1m1!1s0x8788d0b489000001:0xb29bf537624a294f!2m2!1d-97.1815516!2d43.7031903!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 4 (Aug 23rd): Montrose City Campground, SD -> Sage Creek Campground, SD
+https://www.google.com/maps/dir/Montrose+City+Campground,+206+Clark+St,+Montrose,+SD+57048/Sage+Creek+Campground,+Wall,+SD+57790/@43.8202667,-101.118947,8z/data=!3m1!4b1!4m14!4m13!1m5!1m1!1s0x8788d0b489000001:0xb29bf537624a294f!2m2!1d-97.1815516!2d43.7031903!1m5!1m1!1s0x877dc7bfcb0a175b:0x563cee60ec824617!2m2!1d-102.4143811!2d43.8940904!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 5 (Aug 24th): Sage Creek Campground, SD -> Deadwood, SD
+https://www.google.com/maps/dir/Sage+Creek+Campground,+Wall,+SD+57790/Deadwood,+South+Dakota/@44.2202024,-103.5549131,10.26z/data=!4m19!4m18!1m10!1m1!1s0x877dc7bfcb0a175b:0x563cee60ec824617!2m2!1d-102.4143811!2d43.8940904!3m4!1m2!1d-103.501752!2d43.8251253!3s0x877d3380c8549e0f:0xec7ef28e64384d0d!1m5!1m1!1s0x5332a41e88e71e55:0x3e9d03de70805b0f!2m2!1d-103.7296415!2d44.376651!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 6 (Aug 25th): Deadwood, SD -> KOA Sheridan, WY
+https://www.google.com/maps/dir/Deadwood,+South+Dakota/Sheridan+%2F+Big+Horn+Mountains+KOA+Journey,+63+Decker+Rd,+Sheridan,+WY+82801/@44.542201,-106.931767,8z/data=!4m14!4m13!1m5!1m1!1s0x5332a41e88e71e55:0x3e9d03de70805b0f!2m2!1d-103.7296415!2d44.376651!1m5!1m1!1s0x5335fb36e9f302d7:0x4184fe0b1b7a29d!2m2!1d-106.9637019!2d44.8359017!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 7 (Aug 26th): KOA Sheridan, WY -> Lander, WY (BLM Land)
+https://www.google.com/maps/dir/Sheridan+%2F+Big+Horn+Mountains+KOA+Journey,+63+Decker+Rd,+Sheridan,+WY+82801/Lander,+Wyoming+82520/@44.288674,-108.4961155,8.76z/data=!4m19!4m18!1m10!1m1!1s0x5335fb36e9f302d7:0x4184fe0b1b7a29d!2m2!1d-106.9637019!2d44.8359017!3m4!1m2!1d-108.0045452!2d44.4939026!3s0x534bc868b1208027:0xcfd3e0c5c4a4f056!1m5!1m1!1s0x534cdbd5955700af:0x466a779abe9d3d13!2m2!1d-108.7306725!2d42.833014!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 8 (Aug 27th): Lander, WY -> Big Sandy Trailhead, Boulder, WY
+https://www.google.com/maps/dir/Lander,+Wyoming+82520/Big+Sandy+Trailhead,+Boulder,+WY+82923/@42.6026639,-109.2655179,10z/data=!3m1!4b1!4m14!4m13!1m5!1m1!1s0x534cdbd5955700af:0x466a779abe9d3d13!2m2!1d-108.7306725!2d42.833014!1m5!1m1!1s0x8759cbee7451bb03:0x9c2d25f700a447b4!2m2!1d-109.2712855!2d42.6877038!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 9 (Aug 28th): Wind River Ranger, WY
+
+# Day 10 (Aug 29th): Big Sandy Trailhead, Boulder, WY -> Rapid City, WY
+google.com/maps/dir/Big+Sandy+Trailhead,+Boulder,+WY+82923/Rock+Springs+%2F+Green+River+KOA+Journey,+86+Foothill+Blvd,+Rock+Springs,+WY+82901/@42.126242,-109.9735766,9z/data=!4m14!4m13!1m5!1m1!1s0x8759cbee7451bb03:0x9c2d25f700a447b4!2m2!1d-109.2712855!2d42.6877038!1m5!1m1!1s0x875a63d222d6c0d7:0x236d2178985e7bb6!2m2!1d-109.2932917!2d41.5683359!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 11 (Aug 30th): Rapid City, WY -> Flight State Recreation Area, Draper, UT
+https://www.google.com/maps/dir/Flight+Park+State+Recreation+Area,+121100+N+East,+N+Frontage+Rd,+Lehi,+UT+84043/Rock+Springs+%2F+Green+River+KOA+Journey,+86+Foothill+Blvd,+Rock+Springs,+WY+82901/@41.0081797,-111.2670059,9z/data=!3m1!4b1!4m14!4m13!1m5!1m1!1s0x875280545454d04d:0xe85c06739bb074b1!2m2!1d-111.9064048!2d40.4540336!1m5!1m1!1s0x875a63d222d6c0d7:0x236d2178985e7bb6!2m2!1d-109.2932917!2d41.5683359!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 12 (Aug 31st): SLC, UT
+
+# Day 13 (Sep 1st): SLC, UT
+
+# Day 14 (Sep 2nd): SLC, UT
+
+# Day 15 (Sep 3rd): SLC, UT
+
+# Day 16 (Sep 4th): SLC, UT -> Willard Bay State Campground, UT
+google.com/maps/dir/Flight+Park+State+Recreation+Area,+121100+N+East,+N+Frontage+Rd,+Lehi,+UT+84043/Willard+Bay+State+Park,+900+W+650+N,+Willard,+UT+84340/@41.1653851,-112.1944152,9z/data=!4m14!4m13!1m5!1m1!1s0x875280545454d04d:0xe85c06739bb074b1!2m2!1d-111.9064048!2d40.4540336!1m5!1m1!1s0x87536dd69ca65b19:0x76d3fdf402e27839!2m2!1d-112.100836!2d41.3976956!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 17 (Sep 5th): Willard Bay State Camoground, UT -> Alpine, WY (BLM Land)
+https://www.google.com/maps/dir/Alpine,+Wyoming+83128/Willard+Bay+State+Park,+900+W+650+N,+Willard,+UT+84340/@42.8411446,-111.9411852,8.98z/data=!4m15!4m14!1m5!1m1!1s0x535350155a6b12f3:0x935e7f43bbd944c1!2m2!1d-111.0164822!2d43.1610946!1m5!1m1!1s0x87536dd69ca65b19:0x76d3fdf402e27839!2m2!1d-112.100836!2d41.3976956!3e0!5i2?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 18 (Sep 6th): Alpine, WY -> Ditch Creek Road, WY (BLM Land - Grand Tetons)
+https://www.google.com/maps/dir/Alpine,+Wyoming+83128/Ditch+Creek+Rd,+Wyoming/@43.4253612,-111.1291195,10z/data=!3m1!4b1!4m14!4m13!1m5!1m1!1s0x535350155a6b12f3:0x935e7f43bbd944c1!2m2!1d-111.0164822!2d43.1610946!1m5!1m1!1s0x5352f8edc2eb3c41:0x8309581e9f166c5!2m2!1d-110.5795795!2d43.689577!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 19 (Sep 7th): Ditch Creek Road, WY -> Grassy Lake Campgrounds, WY
+google.com/maps/dir/Ditch+Creek+Rd,+Wyoming/Grassy+Lake+Road+Campsites,+Wyoming+83013/@43.8800133,-110.9508225,10z/data=!4m14!4m13!1m5!1m1!1s0x5352f8edc2eb3c41:0x8309581e9f166c5!2m2!1d-110.5795795!2d43.689577!1m5!1m1!1s0x53523c702beec417:0xf35acebdb5868498!2m2!1d-110.6860915!2d44.1032664!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 20 (Sep 8th): Grassy Lake Campgrounds, WY -> KOA Livingstone, MT
+https://www.google.com/maps/dir/Grassy+Lake+Road+Campsites,+Wyoming+83013/Livingston+%2F+Paradise+Valley+KOA+Holiday,+163+Pine+Creek+Rd,+Livingston,+MT+59047/@45.2608202,-111.1646637,9z/data=!4m14!4m13!1m5!1m1!1s0x53523c702beec417:0xf35acebdb5868498!2m2!1d-110.6860915!2d44.1032664!1m5!1m1!1s0x534f891cdef2b4b9:0x3c3acb1baa12dc2d!2m2!1d-110.5797075!2d45.5118457!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 21 (Sep 9th): KOA Livingstone, MT -> Spokane, WA (BLM Land - Fish Trap)
+https://www.google.com/maps/dir/Livingston+%2F+Paradise+Valley+KOA+Holiday,+163+Pine+Creek+Rd,+Livingston,+MT+59047/Fishtrap,+Washington+99032/@47.3875496,-117.8092192,12.98z/data=!4m14!4m13!1m5!1m1!1s0x534f891cdef2b4b9:0x3c3acb1baa12dc2d!2m2!1d-110.5797075!2d45.5118457!1m5!1m1!1s0x549e5a5f29975ef1:0x53fac0b7c98b162b!2m2!1d-117.8307749!2d47.3884949!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
+
+# Day 22 (Sep 10th): Spokane, WA -> Abbotsford, BC
+google.com/maps/dir/Fishtrap,+Washington+99032/Abbotsford,+British+Columbia,+Canada/@47.9876593,-121.4779734,8z/data=!4m14!4m13!1m5!1m1!1s0x549e5a5f29975ef1:0x53fac0b7c98b162b!2m2!1d-117.8307749!2d47.3884949!1m5!1m1!1s0x548435c6706ab783:0x50135152a7b0560!2m2!1d-122.3044697!2d49.0504377!3e0?entry=ttu&g_ep=EgoyMDI2MDkwOC4wIKXMDSoASAFQAw%3D%3D
