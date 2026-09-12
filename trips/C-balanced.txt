@@ -1,0 +1,17 @@
+https://www.google.com/maps/dir/Abbotsford%2C+British+Columbia%2C+Canada/Port+Angeles%2C+Washington
+https://www.google.com/maps/dir/Port+Angeles%2C+Washington/Cannon+Beach%2C+Oregon
+https://www.google.com/maps/dir/Cannon+Beach%2C+Oregon/Fort+Klamath%2C+Oregon
+https://www.google.com/maps/dir/Fort+Klamath%2C+Oregon/Crescent+City%2C+California
+https://www.google.com/maps/dir/Crescent+City%2C+California/San+Francisco%2C+California
+https://www.google.com/maps/dir/San+Francisco%2C+California/Big+Sur%2C+California
+https://www.google.com/maps/dir/Big+Sur%2C+California/Three+Rivers%2C+California
+https://www.google.com/maps/dir/Three+Rivers%2C+California/Furnace+Creek%2C+California
+https://www.google.com/maps/dir/Furnace+Creek%2C+California/Twentynine+Palms%2C+California
+https://www.google.com/maps/dir/Twentynine+Palms%2C+California/Springdale%2C+Utah
+https://www.google.com/maps/dir/Springdale%2C+Utah/Bryce+Canyon+City%2C+Utah
+https://www.google.com/maps/dir/Bryce+Canyon+City%2C+Utah/Moab%2C+Utah
+https://www.google.com/maps/dir/Moab%2C+Utah/Cortez%2C+Colorado
+https://www.google.com/maps/dir/Cortez%2C+Colorado/Estes+Park%2C+Colorado
+https://www.google.com/maps/dir/Estes+Park%2C+Colorado/Omaha%2C+Nebraska
+https://www.google.com/maps/dir/Omaha%2C+Nebraska/Chicago%2C+Illinois
+https://www.google.com/maps/dir/Chicago%2C+Illinois/Ottawa%2C+Ontario%2C+Canada

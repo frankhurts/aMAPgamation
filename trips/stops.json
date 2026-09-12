@@ -1,0 +1,256 @@
+{
+ "A-full-coast": [
+  [
+   "Abbotsford, British Columbia, Canada",
+   "trip 1 ends here"
+  ],
+  [
+   "Port Angeles, Washington",
+   "Olympic NP - north"
+  ],
+  [
+   "Ashford, Washington",
+   "Mount Rainier NP - Nisqually"
+  ],
+  [
+   "Astoria, Oregon",
+   "Columbia river mouth"
+  ],
+  [
+   "Newport, Oregon",
+   "central Oregon coast"
+  ],
+  [
+   "Bandon, Oregon",
+   "south Oregon coast"
+  ],
+  [
+   "Crescent City, California",
+   "Redwood NP - north"
+  ],
+  [
+   "Mendocino, California",
+   "Mendocino coast"
+  ],
+  [
+   "Point Reyes Station, California",
+   "Point Reyes NS"
+  ],
+  [
+   "Monterey, California",
+   "Monterey bay"
+  ],
+  [
+   "Big Sur, California",
+   "Big Sur / CA-1"
+  ],
+  [
+   "San Luis Obispo, California",
+   "central coast"
+  ],
+  [
+   "Santa Barbara, California",
+   "south coast"
+  ],
+  [
+   "Twentynine Palms, California",
+   "Joshua Tree NP - north"
+  ],
+  [
+   "Springdale, Utah",
+   "Zion NP"
+  ],
+  [
+   "Bryce Canyon City, Utah",
+   "Bryce Canyon NP"
+  ],
+  [
+   "Torrey, Utah",
+   "Capitol Reef NP"
+  ],
+  [
+   "Moab, Utah",
+   "Arches + Canyonlands NP"
+  ],
+  [
+   "Cortez, Colorado",
+   "Mesa Verde NP"
+  ],
+  [
+   "Mosca, Colorado",
+   "Great Sand Dunes NP"
+  ],
+  [
+   "Estes Park, Colorado",
+   "Rocky Mountain NP"
+  ],
+  [
+   "Omaha, Nebraska",
+   "plains overnight"
+  ],
+  [
+   "Chicago, Illinois",
+   "midwest overnight"
+  ],
+  [
+   "London, Ontario, Canada",
+   "Ontario overnight"
+  ],
+  [
+   "Ottawa, Ontario, Canada",
+   "home"
+  ]
+ ],
+ "B-parks-priority": [
+  [
+   "Abbotsford, British Columbia, Canada",
+   "trip 1 ends here"
+  ],
+  [
+   "Port Angeles, Washington",
+   "Olympic NP - north"
+  ],
+  [
+   "Ashford, Washington",
+   "Mount Rainier NP - Nisqually"
+  ],
+  [
+   "Fort Klamath, Oregon",
+   "Crater Lake NP - south gateway"
+  ],
+  [
+   "Crescent City, California",
+   "Redwood NP - north"
+  ],
+  [
+   "Mineral, California",
+   "Lassen Volcanic NP"
+  ],
+  [
+   "Yosemite Village, California",
+   "Yosemite NP - valley"
+  ],
+  [
+   "Three Rivers, California",
+   "Sequoia + Kings Canyon NP"
+  ],
+  [
+   "Furnace Creek, California",
+   "Death Valley NP"
+  ],
+  [
+   "Twentynine Palms, California",
+   "Joshua Tree NP - north"
+  ],
+  [
+   "Springdale, Utah",
+   "Zion NP"
+  ],
+  [
+   "Bryce Canyon City, Utah",
+   "Bryce Canyon NP"
+  ],
+  [
+   "Torrey, Utah",
+   "Capitol Reef NP"
+  ],
+  [
+   "Moab, Utah",
+   "Arches + Canyonlands NP"
+  ],
+  [
+   "Montrose, Colorado",
+   "Black Canyon of the Gunnison NP"
+  ],
+  [
+   "Estes Park, Colorado",
+   "Rocky Mountain NP"
+  ],
+  [
+   "Omaha, Nebraska",
+   "plains overnight"
+  ],
+  [
+   "Chicago, Illinois",
+   "midwest overnight"
+  ],
+  [
+   "Ottawa, Ontario, Canada",
+   "home"
+  ]
+ ],
+ "C-balanced": [
+  [
+   "Abbotsford, British Columbia, Canada",
+   "trip 1 ends here"
+  ],
+  [
+   "Port Angeles, Washington",
+   "Olympic NP - north"
+  ],
+  [
+   "Cannon Beach, Oregon",
+   "north Oregon coast"
+  ],
+  [
+   "Fort Klamath, Oregon",
+   "Crater Lake NP - south gateway"
+  ],
+  [
+   "Crescent City, California",
+   "Redwood NP - north"
+  ],
+  [
+   "San Francisco, California",
+   "bay area"
+  ],
+  [
+   "Big Sur, California",
+   "Big Sur / CA-1"
+  ],
+  [
+   "Three Rivers, California",
+   "Sequoia + Kings Canyon NP"
+  ],
+  [
+   "Furnace Creek, California",
+   "Death Valley NP"
+  ],
+  [
+   "Twentynine Palms, California",
+   "Joshua Tree NP - north"
+  ],
+  [
+   "Springdale, Utah",
+   "Zion NP"
+  ],
+  [
+   "Bryce Canyon City, Utah",
+   "Bryce Canyon NP"
+  ],
+  [
+   "Moab, Utah",
+   "Arches + Canyonlands NP"
+  ],
+  [
+   "Cortez, Colorado",
+   "Mesa Verde NP"
+  ],
+  [
+   "Estes Park, Colorado",
+   "Rocky Mountain NP"
+  ],
+  [
+   "Omaha, Nebraska",
+   "plains overnight"
+  ],
+  [
+   "Chicago, Illinois",
+   "midwest overnight"
+  ],
+  [
+   "Ottawa, Ontario, Canada",
+   "home"
+  ]
+ ]
+}
