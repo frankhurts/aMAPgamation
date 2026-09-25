@@ -398,17 +398,42 @@ export function lines(geom: GeoJSON.Geometry): LngLat[][] {
  *
  * Chunks share their boundary vertex, so the buffers around consecutive chunks
  * cover the route with no seam between them.
+ *
+ * `maxLengthM` exists because point count is the wrong thing to limit for some
+ * providers. Overpass charges by the *area* it has to search, so a thousand
+ * miles of route asked for in one go times out however few vertices describe
+ * it — and it reports that timeout as an empty result, not an error.
  */
-export function queryChunks(route: Route, toleranceM: number, maxPoints: number): LngLat[][] {
+export function queryChunks(
+  route: Route,
+  toleranceM: number,
+  maxPoints: number,
+  maxLengthM = Infinity,
+): LngLat[][] {
   const chunks: LngLat[][] = [];
+
   for (const piece of route.pieces) {
     const thinned = simplify(piece.coords, toleranceM).map((i) => piece.coords[i]!);
     if (thinned.length < 2) continue;
-    for (let i = 0; i < thinned.length - 1; i += maxPoints - 1) {
-      const chunk = thinned.slice(i, i + maxPoints);
-      if (chunk.length >= 2) chunks.push(chunk);
+
+    let chunk: LngLat[] = [thinned[0]!];
+    let length = 0;
+
+    for (let i = 1; i < thinned.length; i++) {
+      length += haversine(thinned[i - 1]!, thinned[i]!);
+      chunk.push(thinned[i]!);
+
+      // Split on whichever limit is reached first, and start the next chunk
+      // at this same vertex so the two buffers meet with no gap between them.
+      if (chunk.length >= maxPoints || length >= maxLengthM) {
+        chunks.push(chunk);
+        chunk = [thinned[i]!];
+        length = 0;
+      }
     }
+    if (chunk.length >= 2) chunks.push(chunk);
   }
+
   return chunks;
 }
 

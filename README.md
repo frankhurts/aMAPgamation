@@ -212,6 +212,16 @@ cross-country route takes a few hundred requests rather than a handful.
 Providers run one at a time, and one being down does not throw away the others
 — the sync reports what was missing and keeps what it got.
 
+**The first corridor sync is slow.** Overpass is charged by the ground a query
+covers, not by how long the line is, so the route goes out in stretches of
+about 80 miles — measured, because 80 answers in ~24 s while 150 is refused
+outright. A 5,000 mile trip is therefore ~60 queries and the better part of
+half an hour. Every stretch is cached the moment it lands, so it is paid once,
+a re-run resumes where it stopped, and a stretch that fails is reported and
+retried next time rather than losing the rest. Tighten the buffers (camping at
+20 miles is what costs the most) or set `OVERPASS_CHUNK_MILES` if you want
+different trade-offs.
+
 **Be gentle with Overpass.** It is donated infrastructure, and its real limit is
 not the published quota: an IP that queries too often gets blocked at the TCP
 level for tens of minutes, which looks like the server being down rather than

@@ -1,7 +1,16 @@
 import { METERS_PER_MILE } from "../../geo/corridor.js";
 import { cached, cacheKey } from "./cache.js";
 import type { Category } from "./categories.js";
-import { TIMEOUT_MS, request, sleep, text, type Provider, type ProviderContext, type RawSite } from "./provider.js";
+import {
+  ProviderError,
+  TIMEOUT_MS,
+  request,
+  sleep,
+  text,
+  type Provider,
+  type ProviderContext,
+  type RawSite,
+} from "./provider.js";
 
 /**
  * OpenStreetMap, via Overpass.
@@ -36,6 +45,22 @@ const ENDPOINTS = [
 const MAX_POINTS = 300;
 
 /**
+ * How much route one query may cover.
+ *
+ * This is the limit that actually bites. Overpass is charged by the ground it
+ * has to search, not by how many vertices describe the line, so a whole
+ * cross-country route asked for in one go times out no matter how few points
+ * it decimates to.
+ *
+ * Measured against a 20-mile camping buffer: 80 miles answers in ~24s with
+ * ~1,100 elements, while 150 miles is refused outright. A cross-country route
+ * is therefore dozens of queries and the better part of half an hour — but
+ * each chunk is cached the moment it lands, so it is paid once and a rerun
+ * resumes where it stopped.
+ */
+const MAX_CHUNK_MILES = Number(process.env.OVERPASS_CHUNK_MILES ?? 80);
+
+/**
  * Overpass hands out a handful of query slots, and the real limit is not the
  * documented quota but an IP-level block that lasts tens of minutes if you
  * query too often. One request at a time, well spaced — a whole route is only
@@ -59,16 +84,20 @@ export const osm: Provider = {
   usable: () => ({ ok: true }),
 
   async fetch(ctx: ProviderContext): Promise<RawSite[]> {
-    const chunks = ctx.chunks(MAX_POINTS);
+    const chunks = ctx.chunks(MAX_POINTS, MAX_CHUNK_MILES * METERS_PER_MILE);
     const sites: RawSite[] = [];
     let first = true;
+
+    let failed = 0;
 
     for (const chunk of chunks) {
       const query = buildQuery(chunk, ctx);
       if (!query) return [];
 
       const key = cacheKey("overpass", ctx.routeKey, query);
-      const elements = await cached(
+      let elements: OverpassElement[];
+      try {
+        elements = await cached(
         "osm",
         key,
         ctx.stats,
@@ -77,9 +106,34 @@ export const osm: Provider = {
           // cached re-sync should not sit through a delay per chunk.
           if (!first) await sleep(POLITE_MS);
           first = false;
-          return (await overpass(query)).elements ?? [];
+
+          const body = await overpass(query);
+          // Overpass reports a timed-out or aborted query as HTTP 200 with an
+          // empty `elements` and a `remark` — so the one failure mode that
+          // must not pass silently looks exactly like "nothing out here".
+          // Throwing means it is retried, then reported, and never cached.
+          if (body.remark) {
+            throw new ProviderError(
+              `Overpass could not answer: ${body.remark}. ` +
+                `Try a smaller OVERPASS_CHUNK_MILES (currently ${MAX_CHUNK_MILES}).`,
+            );
+          }
+          return body.elements ?? [];
         },
-      );
+        );
+      } catch (err) {
+        // One chunk out of dozens failing must not discard the rest. Over half
+        // an hour of querying, losing 80 miles of a 5,000 mile route is worth
+        // saying out loud and carrying on from; the chunks that did land stay
+        // cached, so a rerun retries only the gaps.
+        failed++;
+        ctx.warn(
+          `OpenStreetMap: ${failed === 1 ? "" : `${failed} chunks failed, latest `}` +
+            `${(err as Error).message}`,
+        );
+        if (failed >= chunks.length) throw err;
+        continue;
+      }
 
       for (const el of elements) {
         const site = toSite(el);
@@ -87,6 +141,12 @@ export const osm: Provider = {
       }
     }
 
+    if (failed > 0) {
+      ctx.warn(
+        `OpenStreetMap covered ${chunks.length - failed} of ${chunks.length} stretches ` +
+          `of the route; re-run the sync to fill the ${failed} that failed.`,
+      );
+    }
     return sites;
   },
 };
@@ -138,7 +198,9 @@ export function buildQuery(chunk: [number, number][], ctx: ProviderContext): str
  * the fallback is a good deal slower rather than a second fast option — which
  * is why the client timeout is generous enough to cover it.
  */
-async function overpass(query: string): Promise<{ elements?: OverpassElement[] }> {
+async function overpass(
+  query: string,
+): Promise<{ elements?: OverpassElement[]; remark?: string }> {
   let lastError: Error | null = null;
 
   for (const url of ENDPOINTS) {
@@ -148,7 +210,7 @@ async function overpass(query: string): Promise<{ elements?: OverpassElement[] }
         headers: { "content-type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ data: query }).toString(),
       });
-      return (await res.json()) as { elements?: OverpassElement[] };
+      return (await res.json()) as { elements?: OverpassElement[]; remark?: string };
     } catch (err) {
       lastError = err as Error;
     }

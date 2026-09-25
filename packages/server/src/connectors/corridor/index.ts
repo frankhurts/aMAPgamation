@@ -86,7 +86,8 @@ export async function syncCorridor(cfg: CorridorSourceConfig): Promise<CorridorS
   const notes: string[] = [];
   const stats: CacheStats = { hits: 0, misses: 0 };
   const ctx: ProviderContext = {
-    chunks: (maxPoints) => queryChunks(loaded.route, DECIMATE_M, maxPoints),
+    chunks: (maxPoints, maxLengthM) =>
+      queryChunks(loaded.route, DECIMATE_M, maxPoints, maxLengthM),
     routeKey: `${cfg.route}#${Math.round(loaded.route.lengthM)}#${loaded.route.pieces.length}`,
     buffers,
     slackM: DECIMATE_M,
@@ -160,12 +161,31 @@ function measure(
   // corridor is tens of thousands of sites, and comparing every one against
   // every earlier one is quadratic.
   const seen = new Map<string, Kept[]>();
+  /**
+   * The same upstream record, seen twice, keyed by the provider's own id.
+   *
+   * Providers cover a route in overlapping stretches, so anything near a join
+   * is genuinely returned by both queries. That is not a judgement call the
+   * way two agencies describing one campground is — it is one record arriving
+   * twice, and it has to be caught before the proximity pass, which
+   * deliberately refuses to merge unnamed neighbours.
+   */
+  const byUpstreamId = new Set<string>();
   let outside = 0;
   let duplicate = 0;
 
   for (const { site, provider } of sites) {
     const miles = buffers.get(site.category);
     if (miles === undefined) continue;
+
+    if (site.sourceId !== null) {
+      const id = `${provider.id}|${site.sourceId}`;
+      if (byUpstreamId.has(id)) {
+        duplicate++;
+        continue;
+      }
+      byUpstreamId.add(id);
+    }
 
     const hit = corridorFor(miles).locate([site.lng, site.lat]);
     if (!hit) {

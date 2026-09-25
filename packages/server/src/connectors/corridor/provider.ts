@@ -34,7 +34,7 @@ export interface ProviderContext {
    * size. Every chunk comes from the same decimation, so `slackM` holds
    * whatever cap is picked.
    */
-  chunks(maxPoints: number): LngLat[][];
+  chunks(maxPoints: number, maxLengthM?: number): LngLat[][];
   /** Identifies this route (and its current contents) for cache keys. */
   routeKey: string;
   /** Miles off-route wanted, per category. Only categories asked for appear. */
@@ -128,10 +128,16 @@ export async function request(
         );
       }
 
-      lastError =
-        (err as Error).name === "AbortError"
-          ? `timed out after ${TIMEOUT_MS / 1000}s`
-          : (err as Error).message;
+      // A query the client had to abort is a query that asked for too much.
+      // Retrying it unchanged costs the same wait again and ends the same way,
+      // so it fails now and the caller decides what to do about the size.
+      if ((err as Error).name === "AbortError") {
+        throw new ProviderError(
+          `timed out after ${TIMEOUT_MS / 1000}s — the query covers too much ground`,
+        );
+      }
+
+      lastError = (err as Error).message;
       if (attempt === attempts) throw new ProviderError(lastError);
     } finally {
       clearTimeout(timer);

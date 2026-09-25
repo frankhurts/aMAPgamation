@@ -149,7 +149,13 @@ test("fetched sites land in category layers, measured against the real route", a
     "Dalton Springs",
     "Wind Whistle Campground",
   ]);
-  assert.ok(notes.some((n) => /2 duplicate/.test(n)), notes.join(" | "));
+  assert.ok(notes.some((n) => /duplicate/.test(n)), notes.join(" | "));
+
+  // Providers cover the route in overlapping stretches, so a site near a join
+  // really is returned by two queries. Caught by upstream id, which is the
+  // only signal that works for the unnamed ones.
+  const osmCalls = calls.filter((c) => c.includes("/api/interpreter")).length;
+  assert.ok(osmCalls > 1, `expected the fixture route to span several chunks, got ${osmCalls}`);
 
   // Two of these are pumps 45 m apart from the *same* provider — two real gas
   // stations at one junction, not one station recorded twice.
@@ -227,6 +233,46 @@ test("one provider failing does not throw away the others", async () => {
   } finally {
     globalThis.fetch = saved;
   }
+});
+
+test("an Overpass timeout reported as an empty 200 is not mistaken for no results", async () => {
+  calls = [];
+  const saved = globalThis.fetch;
+  // This is exactly what Overpass sends when a query covers too much ground:
+  // HTTP 200, an empty elements array, and the reason in `remark`. Reading it
+  // as "nothing out here" caches an empty corridor and shows a bare map.
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input).includes("/api/interpreter")) {
+      return new Response(
+        JSON.stringify({
+          version: 0.6,
+          elements: [],
+          remark: 'runtime error: Query timed out in "query" at line 1 after 91 seconds.',
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    return saved(input, init);
+  }) as typeof fetch;
+
+  try {
+    const { features, notes } = await syncCorridor(
+      config({ id: "timeout-corridor", route: `${ROUTE}/a-monticello-to-cortez.gpx` }),
+    );
+    assert.ok(
+      notes.some((n) => /OpenStreetMap failed.*timed out/s.test(n)),
+      `the timeout must be reported, got: ${notes.join(" | ")}`,
+    );
+    assert.ok(!features.some((f) => f.props["provider"] === "osm"));
+  } finally {
+    globalThis.fetch = saved;
+  }
+
+  // And nothing may be cached: a re-run has to try again rather than serve
+  // the empty answer back forever.
+  calls = [];
+  await syncCorridor(config({ id: "timeout-corridor", route: `${ROUTE}/a-monticello-to-cortez.gpx` }));
+  assert.ok(calls.some((c) => c.includes("/api/interpreter")), "the failed query was not cached");
 });
 
 test("an unknown provider or an unusable route is refused with a usable message", async () => {
