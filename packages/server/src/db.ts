@@ -291,6 +291,64 @@ export function findOrphanedSources(knownKeys?: Set<string>): StoredSource[] {
   return listStoredSources().filter((s) => !known.has(s.source_key));
 }
 
+export interface CandidateRow {
+  id: string;
+  layer_id: string | null;
+  name: string | null;
+  geometry: string;
+}
+
+/**
+ * Features whose bounding box overlaps a box — the cheap first pass of a
+ * corridor query, before exact distances are measured in JS.
+ */
+export function featuresInBbox(
+  [minx, miny, maxx, maxy]: [number, number, number, number],
+  excludeLayerId?: string,
+): CandidateRow[] {
+  return db
+    .prepare(
+      `SELECT id, layer_id, name, geometry FROM features
+       WHERE maxx >= ? AND minx <= ? AND maxy >= ? AND miny <= ?
+         AND (? IS NULL OR layer_id IS NOT ?)`,
+    )
+    .all(minx, maxx, miny, maxy, excludeLayerId ?? null, excludeLayerId ?? null) as CandidateRow[];
+}
+
+export interface LineLayerRow {
+  id: string;
+  source: SourceType;
+  source_key: string;
+  name: string;
+  lines: number;
+  updated_at: string;
+}
+
+/** Layers holding at least one line — the synced layers usable as a route. */
+export function lineLayers(): LineLayerRow[] {
+  return db
+    .prepare(
+      `SELECT l.id, l.source, l.source_key, l.name, l.updated_at, COUNT(f.id) AS lines
+       FROM layers l JOIN features f ON f.layer_id = l.id
+       WHERE f.geom_type IN ('LineString', 'MultiLineString', 'GeometryCollection')
+       GROUP BY l.id
+       ORDER BY l.source, l.source_key, l.sort_order, l.name`,
+    )
+    .all() as LineLayerRow[];
+}
+
+/** One layer's geometries, for building a route from synced data. */
+export function layerGeometries(
+  layerId: string,
+): { layer: LineLayerRow; geometries: GeoJSON.Geometry[] } | null {
+  const layer = lineLayers().find((l) => l.id === layerId);
+  if (!layer) return null;
+  const rows = db
+    .prepare(`SELECT geometry FROM features WHERE layer_id = ?`)
+    .all(layerId) as { geometry: string }[];
+  return { layer, geometries: rows.map((r) => JSON.parse(r.geometry) as GeoJSON.Geometry) };
+}
+
 export function stats() {
   const f = db.prepare(`SELECT COUNT(*) AS n FROM features`).get() as { n: number };
   const l = db.prepare(`SELECT COUNT(*) AS n FROM layers`).get() as { n: number };

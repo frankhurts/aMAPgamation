@@ -35,3 +35,44 @@ export const api = {
   sync: () =>
     fetch("/api/sync", { method: "POST" }).then(json<{ results: SyncResult[] }>),
 };
+
+export interface RouteCandidate {
+  ref: string;
+  label: string;
+  kind: "file" | "layer";
+}
+
+export interface RouteSummary {
+  ref: string;
+  label: string;
+  lengthMiles: number;
+  legs: number;
+  /** Connected stretches; more than one means alternates or a gap. */
+  pieces: number;
+}
+
+export interface CorridorMatch {
+  id: string;
+  layerId: string | null;
+  name: string | null;
+  offRouteMiles: number;
+  mileMarker: number;
+  lng: number;
+  lat: number;
+}
+
+/** The route as drawn: one line per connected piece. */
+export type RouteLine = GeoJSON.FeatureCollection<GeoJSON.LineString>;
+
+const q = (params: Record<string, string | number>) =>
+  new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString();
+
+export const corridorApi = {
+  routes: () => fetch("/api/routes").then(json<{ routes: RouteCandidate[] }>),
+  route: (ref: string) =>
+    fetch(`/api/route?${q({ ref })}`).then(json<{ route: RouteSummary; line: RouteLine }>),
+  near: (ref: string, miles: number, signal?: AbortSignal) =>
+    fetch(`/api/near?${q({ route: ref, miles })}`, { signal }).then(
+      json<{ route: RouteSummary; miles: number; matches: CorridorMatch[] }>,
+    ),
+};

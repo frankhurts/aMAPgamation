@@ -9,6 +9,7 @@ import {
   stats,
 } from "./db.js";
 import { syncAll, syncSource } from "./connectors/index.js";
+import { RouteError, listRouteCandidates, nearRoute, routeGeometry } from "./geo/routes.js";
 
 const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? "info" } });
 await app.register(cors, { origin: true });
@@ -54,6 +55,30 @@ app.get<{ Querystring: { layers?: string } }>("/api/features", async (req) => {
   const ids = req.query.layers?.split(",").filter(Boolean);
   return featureCollection(ids);
 });
+
+/** Routes a corridor can follow: synced line layers and GPX in the repo. */
+app.get("/api/routes", async () => ({ routes: listRouteCandidates() }));
+
+/**
+ * Route errors are about the ref the user picked (missing file, a layer that
+ * only holds points), so they come back as messages rather than 500s.
+ */
+function routeErrors<T>(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, fn: () => T) {
+  try {
+    return fn();
+  } catch (err) {
+    if (err instanceof RouteError) return reply.code(err.status).send({ error: err.message });
+    throw err;
+  }
+}
+
+app.get<{ Querystring: { ref?: string } }>("/api/route", async (req, reply) =>
+  routeErrors(reply, () => routeGeometry(req.query.ref ?? "")),
+);
+
+app.get<{ Querystring: { route?: string; miles?: string } }>("/api/near", async (req, reply) =>
+  routeErrors(reply, () => nearRoute(req.query.route ?? "", Number(req.query.miles ?? 25))),
+);
 
 app.post<{ Querystring: { source?: string } }>("/api/sync", async (req, reply) => {
   // A malformed or duplicate-id config is a user-fixable problem, so return

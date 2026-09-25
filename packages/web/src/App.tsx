@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, type Layer, type SyncResult } from "./api";
+import { api, type CorridorMatch, type Layer, type SyncResult } from "./api";
 import { BASEMAPS, type BasemapKey } from "./basemaps";
+import { CorridorPanel, useCorridor } from "./Corridor";
+import { corridorBuffer } from "./corridorBuffer";
 import { MapView } from "./MapView";
 
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -61,6 +63,10 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [fitKey, setFitKey] = useState(0);
+  const [tab, setTab] = useState<"layers" | "corridor">("layers");
+  const [loadCount, setLoadCount] = useState(0);
+  const [focus, setFocus] = useState<{ lng: number; lat: number; key: number } | null>(null);
+  const corridor = useCorridor(loadCount);
 
   const load = useCallback(async (fit = false) => {
     try {
@@ -73,6 +79,7 @@ export default function App() {
         prev.size === 0 ? new Set(ls.map((l) => l.id)) : new Set([...prev].filter((id) => ls.some((l) => l.id === id))),
       );
       if (fit) setFitKey((k) => k + 1);
+      setLoadCount((n) => n + 1);
       setStatus(null);
     } catch (err) {
       setStatus((err as Error).message);
@@ -150,7 +157,41 @@ export default function App() {
   const setAll = (on: boolean) =>
     setVisible(on ? new Set(layers.map((l) => l.id)) : new Set());
 
-  const shownCount = data.features.filter((f) =>
+  /**
+   * With a route picked, features carry their mile marker into popups, and
+   * anything outside the corridor drops out unless you ask to keep it.
+   */
+  const { matches, onlyInside } = corridor;
+  const mapData = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (!matches) return data;
+    const byId = new Map(matches.map((m) => [m.id, m]));
+    const features: GeoJSON.Feature[] = [];
+    for (const f of data.features) {
+      const m = byId.get(String(f.id ?? f.properties?.["id"]));
+      if (!m) {
+        if (!onlyInside) features.push(f);
+        continue;
+      }
+      features.push({
+        ...f,
+        properties: { ...f.properties, mileMarker: m.mileMarker, offRouteMiles: m.offRouteMiles },
+      });
+    }
+    return { type: "FeatureCollection", features };
+  }, [data, matches, onlyInside]);
+
+  const corridorOverlay = useMemo(
+    () =>
+      corridor.line && corridor.miles > 0
+        ? { line: corridor.line, buffer: corridorBuffer(corridor.line, corridor.miles) }
+        : null,
+    [corridor.line, corridor.miles],
+  );
+
+  const focusOn = (m: CorridorMatch) =>
+    setFocus((prev) => ({ lng: m.lng, lat: m.lat, key: (prev?.key ?? 0) + 1 }));
+
+  const shownCount = mapData.features.filter((f) =>
     visible.has(String(f.properties?.["layerId"] ?? "")),
   ).length;
 
@@ -178,7 +219,29 @@ export default function App() {
 
         {status && <div className="status">{status}</div>}
 
-        {layers.length === 0 ? (
+        <div className="tabs" role="tablist">
+          <button
+            role="tab"
+            aria-selected={tab === "layers"}
+            className={tab === "layers" ? "tab-on" : ""}
+            onClick={() => setTab("layers")}
+          >
+            Layers
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === "corridor"}
+            className={tab === "corridor" ? "tab-on" : ""}
+            onClick={() => setTab("corridor")}
+          >
+            Along route
+            {corridor.routeRef && <span className="tab-dot" title="A route corridor is active" />}
+          </button>
+        </div>
+
+        {tab === "corridor" ? (
+          <CorridorPanel state={corridor} layers={layers} visible={visible} onFocus={focusOn} />
+        ) : layers.length === 0 ? (
           <div className="empty">
             <p>No layers yet.</p>
             <p>
@@ -192,6 +255,7 @@ export default function App() {
             <div className="layer-actions">
               <span>
                 {shownCount} of {data.features.length} features
+                {matches && onlyInside && " · in corridor"}
               </span>
               <div>
                 <button onClick={() => setAll(true)}>All</button>
@@ -230,7 +294,14 @@ export default function App() {
         )}
       </aside>
 
-      <MapView data={data} visibleLayerIds={visible} basemap={basemap} fitKey={fitKey} />
+      <MapView
+        data={mapData}
+        visibleLayerIds={visible}
+        basemap={basemap}
+        fitKey={fitKey}
+        corridor={corridorOverlay}
+        focus={focus}
+      />
     </div>
   );
 }

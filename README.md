@@ -71,6 +71,7 @@ git status --ignored --short   # confirm config/sources.json and data/ are ignor
 config/sources.json ─→ connectors/ ─→ NormalizedFeature ─→ SQLite ─→ /api/features ─→ MapLibre
                        mymaps.ts                            (data/)
                        caltopo.ts
+                       gpx.ts
 ```
 
 Every connector normalizes to one canonical feature shape that keeps a verbatim
@@ -113,6 +114,42 @@ red instead of taking a palette color.
 
 `imports/` and loose `*.gpx` files are gitignored — your waypoints never reach
 GitHub.
+
+## Finding things along a route
+
+The **Along route** tab takes a route and a distance, and lists every synced
+feature within that distance in travel order — each with a **mile marker**
+along the route and how far off-route it is. The map dims to just those
+features (untick *Only show features inside the corridor* to keep the rest)
+and draws the corridor itself as a shaded band.
+
+A route can be either kind of data, and the picker offers both:
+
+| Route ref | Reads |
+| --- | --- |
+| `trips/C-balanced` | Every `.gpx` in a folder, as one route |
+| `trips/C-balanced-combined.gpx` | One GPX file — tracks and routes, not waypoints |
+| `layer:<id>` | The lines in a synced layer, e.g. a My Maps routes folder |
+
+**Leg order comes from endpoints, not filenames.** Directory listings and
+`merge-gpx.mjs` both sort alphabetically, so legs are chained by matching each
+one's end to the next one's start. A route with alternate legs or a gap comes
+back in several *pieces*; the panel says so, and mile markers after a break are
+approximate. The same leg appearing twice (per-leg files next to a merged
+export) is counted once.
+
+The layer toggles still apply: hide a layer and its matches leave the list too.
+That is the way to drop a route's own lines when the same trip is also synced
+from My Maps.
+
+| Endpoint | Does |
+| --- | --- |
+| `GET /api/routes` | Route candidates: synced line layers, then GPX in the repo |
+| `GET /api/route?ref=…` | The route's length, leg count and simplified line |
+| `GET /api/near?route=…&miles=25` | Features within `miles` (max 200), by mile marker |
+
+Distances are measured to the nearest point on the route, so a trail that dips
+into the corridor counts, with its mile marker where it comes closest.
 
 ## Renaming a source
 

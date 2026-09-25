@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="fixture" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Moab to Monticello</name>
+    <trkseg>
+      <trkpt lat="38.5733" lon="-109.5498"><ele>1227</ele></trkpt>
+      <trkpt lat="38.3500" lon="-109.4800"><ele>1500</ele></trkpt>
+      <trkpt lat="38.1000" lon="-109.4000"><ele>1900</ele></trkpt>
+      <trkpt lat="37.8714" lon="-109.3424"><ele>2130</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

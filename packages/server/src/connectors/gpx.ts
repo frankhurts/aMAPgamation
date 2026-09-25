@@ -89,7 +89,7 @@ export async function syncGpx(
   return { layers, features };
 }
 
-function gpxFilesIn(dir: string): string[] {
+export function gpxFilesIn(dir: string): string[] {
   return readdirSync(dir)
     .filter((f) => extname(f).toLowerCase() === ".gpx")
     .sort() // Stable layer order across syncs.
