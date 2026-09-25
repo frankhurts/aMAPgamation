@@ -6,7 +6,7 @@
  * data is not. Anything a later phase needs (CalTopo marker symbols, My Maps
  * style urls) is still in there.
  */
-export type SourceType = "mymaps" | "caltopo" | "gpx" | "takeout";
+export type SourceType = "mymaps" | "caltopo" | "gpx" | "takeout" | "corridor";
 
 /**
  * How each service is named in the UI. Distinct from a SourceConfig's `id`
@@ -18,6 +18,7 @@ export const SOURCE_LABELS: Record<SourceType, string> = {
   caltopo: "CalTopo",
   gpx: "GPX",
   takeout: "Google Saved Places",
+  corridor: "Along Route",
 };
 
 interface SourceConfigBase {
@@ -45,10 +46,34 @@ export interface FileSourceConfig extends SourceConfigBase {
   path: string;
 }
 
-export type SourceConfig = RemoteSourceConfig | FileSourceConfig;
+/**
+ * A corridor source fetches public-land and services data along a route,
+ * instead of importing a map somebody already drew.
+ *
+ * It is addressed by `route` — the same ref the Along route tab uses, so a
+ * trip folder of GPX or a synced layer of lines both work — plus how far off
+ * that route each kind of thing is still worth knowing about.
+ */
+export interface CorridorSourceConfig extends SourceConfigBase {
+  type: "corridor";
+  /** A route ref: "trips/C-balanced", a .gpx file, or "layer:<id>". */
+  route: string;
+  /** Miles off-route per category. Omitted categories use their defaults. */
+  buffers?: Record<string, number>;
+  /** Defaults to every provider that is usable without a key. */
+  providers?: string[];
+  /** Categories to fetch. Defaults to all of them. */
+  categories?: string[];
+}
+
+export type SourceConfig = RemoteSourceConfig | FileSourceConfig | CorridorSourceConfig;
 
 export function isFileSource(c: SourceConfig): c is FileSourceConfig {
   return c.type === "gpx" || c.type === "takeout";
+}
+
+export function isCorridorSource(c: SourceConfig): c is CorridorSourceConfig {
+  return c.type === "corridor";
 }
 
 export interface NormalizedLayer {
@@ -83,5 +108,11 @@ export interface SyncResult {
   layers: number;
   features: number;
   error?: string;
+  /**
+   * Things worth saying that are not failures: a provider skipped for want of
+   * an API key, one provider down while the rest succeeded, cache hit counts.
+   * A corridor sync can half-work in ways a map import cannot.
+   */
+  notes?: string[];
   durationMs: number;
 }

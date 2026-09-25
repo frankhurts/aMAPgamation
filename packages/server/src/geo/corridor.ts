@@ -383,3 +383,80 @@ export function lines(geom: GeoJSON.Geometry): LngLat[][] {
       return [];
   }
 }
+
+/**
+ * The route as polylines small enough to hand to a remote API.
+ *
+ * Two constraints fight here. Providers buffer whatever polyline you send, so
+ * the line has to stay faithful to the route; but a 5,000 mile trip is
+ * hundreds of thousands of points and every one of them costs request bytes.
+ *
+ * Douglas-Peucker resolves it, because its tolerance is exactly the guarantee
+ * needed: no point of the true route ends up more than `toleranceM` from the
+ * line sent. Callers add that much slack to the radius they ask for, over-
+ * fetch slightly, and let the local Corridor decide what is really in range.
+ *
+ * Chunks share their boundary vertex, so the buffers around consecutive chunks
+ * cover the route with no seam between them.
+ */
+export function queryChunks(route: Route, toleranceM: number, maxPoints: number): LngLat[][] {
+  const chunks: LngLat[][] = [];
+  for (const piece of route.pieces) {
+    const thinned = simplify(piece.coords, toleranceM).map((i) => piece.coords[i]!);
+    if (thinned.length < 2) continue;
+    for (let i = 0; i < thinned.length - 1; i += maxPoints - 1) {
+      const chunk = thinned.slice(i, i + maxPoints);
+      if (chunk.length >= 2) chunks.push(chunk);
+    }
+  }
+  return chunks;
+}
+
+/** Bounding box of a coordinate list, as [minx, miny, maxx, maxy]. */
+export function boundsOf(coords: LngLat[]): [number, number, number, number] {
+  let minx = Infinity;
+  let miny = Infinity;
+  let maxx = -Infinity;
+  let maxy = -Infinity;
+  for (const [x, y] of coords) {
+    if (x < minx) minx = x;
+    if (y < miny) miny = y;
+    if (x > maxx) maxx = x;
+    if (y > maxy) maxy = y;
+  }
+  return Number.isFinite(minx) ? [minx, miny, maxx, maxy] : [0, 0, 0, 0];
+}
+
+/**
+ * Points every `spacingM` along a polyline, including both ends.
+ *
+ * For providers that only answer "what is near this point" — a route has to be
+ * covered by a chain of overlapping circles, and the spacing is what decides
+ * how many requests that takes.
+ */
+export function sampleAlong(coords: LngLat[], spacingM: number): LngLat[] {
+  if (coords.length === 0) return [];
+  const out: LngLat[] = [coords[0]!];
+  let carried = 0;
+
+  for (let i = 1; i < coords.length; i++) {
+    const a = coords[i - 1]!;
+    const b = coords[i]!;
+    const segment = haversine(a, b);
+    if (segment === 0) continue;
+
+    // Walk this segment, emitting a point each time the running distance
+    // since the last sample passes the spacing.
+    let travelled = spacingM - carried;
+    while (travelled <= segment) {
+      const t = travelled / segment;
+      out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+      travelled += spacingM;
+    }
+    carried = segment - (travelled - spacingM);
+  }
+
+  const last = coords[coords.length - 1]!;
+  if (haversine(out[out.length - 1]!, last) > spacingM / 2) out.push(last);
+  return out;
+}

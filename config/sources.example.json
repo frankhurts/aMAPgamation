@@ -27,6 +27,16 @@
       "path": "imports/onx",
       "enabled": true,
       "$hint": "A .gpx file, or a folder of them. Each file becomes one layer named after the filename. Export from OnX via Content > select > Export. Also reads Gaia, AllTrails and Strava exports. The imports/ folder is gitignored."
+    },
+    {
+      "type": "corridor",
+      "id": "trip-services",
+      "label": "Trip \u2014 Camping & Services",
+      "route": "trips/C-balanced",
+      "buffers": { "camping": 25, "dispersed": 25, "fuel": 5, "water": 5, "groceries": 10 },
+      "providers": ["blm", "osm"],
+      "enabled": false,
+      "$hint": "Fetches camping and services along a route instead of importing a map. 'route' is the same ref the Along route tab uses: a folder of GPX, one .gpx file, or 'layer:<id>'. 'buffers' is miles off-route per category; omit it for the defaults. Add \"ridb\" to providers for recreation.gov (needs a free RIDB_API_KEY in .env). Results are cached on disk, so re-syncing does not re-hit the APIs."
     }
   ]
 }

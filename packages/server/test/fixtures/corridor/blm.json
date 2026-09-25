@@ -1,0 +1,28 @@
+{
+  "objectIdFieldName": "OBJECTID",
+  "geometryType": "esriGeometryPoint",
+  "spatialReference": { "wkid": 4326, "latestWkid": 4326 },
+  "features": [
+    { "attributes": { "OBJECTID": 1001, "FET_TYPE": 10, "FET_SUBTYPE": "Campground",
+        "FET_NAME": "Wind Whistle Campground", "ADMIN_ST": "UT", "UNIT_NAME": null,
+        "DESCRIPTION": "Developed sites with vault toilets.", "WEB_LINK": null,
+        "Original_GlobalID": "{AAAA0001-0000-0000-0000-000000000001}" },
+      "geometry": { "x": -109.4, "y": 38.1 } },
+
+    { "attributes": { "OBJECTID": 1002, "FET_TYPE": 3,
+        "FET_SUBTYPE": "Campsite - Primitive - Non Reservable - No Fee",
+        "FET_NAME": "Bridger Jack Mesa Designated Dispersed Camping", "ADMIN_ST": "UT",
+        "DESCRIPTION": null, "Original_GlobalID": "{AAAA0002-0000-0000-0000-000000000002}" },
+      "geometry": { "x": -109.5498, "y": 38.5733 } },
+
+    { "attributes": { "OBJECTID": 1003, "FET_TYPE": 5, "FET_SUBTYPE": "Toilet",
+        "FET_NAME": "Hatch Point Vault Toilet", "ADMIN_ST": "UT",
+        "Original_GlobalID": "{AAAA0003-0000-0000-0000-000000000003}" },
+      "geometry": { "x": -109.48, "y": 38.35 } },
+
+    { "attributes": { "OBJECTID": 1004, "FET_TYPE": 8, "FET_SUBTYPE": "Parking Area",
+        "FET_NAME": "Trailhead Parking", "ADMIN_ST": "UT",
+        "Original_GlobalID": "{AAAA0004-0000-0000-0000-000000000004}" },
+      "geometry": { "x": -109.4, "y": 38.1 } }
+  ]
+}

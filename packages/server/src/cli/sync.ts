@@ -30,6 +30,9 @@ let failed = 0;
 for (const r of results) {
   if (r.ok) {
     console.log(`  OK    ${r.label}: ${r.layers} layers, ${r.features} features (${r.durationMs}ms)`);
+    // A corridor sync can succeed with a provider missing or a key absent —
+    // silence would make a half-empty result look like the whole answer.
+    for (const note of r.notes ?? []) console.log(`        ${note}`);
   } else {
     failed++;
     console.error(`  FAIL  ${r.label}: ${r.error}`);

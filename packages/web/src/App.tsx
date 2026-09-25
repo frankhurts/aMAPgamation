@@ -97,10 +97,18 @@ export default function App() {
       const { results } = await api.sync();
       const failures = results.filter((r: SyncResult) => !r.ok);
       await load(true);
+      // A corridor source can succeed with a provider missing; saying only
+      // "Synced 5 sources" would present a half-empty result as the whole
+      // answer.
+      const notes = results.flatMap((r: SyncResult) =>
+        (r.notes ?? []).map((n) => `${r.label}: ${n}`),
+      );
       setStatus(
-        failures.length === 0
-          ? `Synced ${results.length} source(s).`
-          : failures.map((f) => `${f.label}: ${f.error}`).join("  |  "),
+        [
+          ...failures.map((f) => `${f.label}: ${f.error}`),
+          ...(failures.length === 0 ? [`Synced ${results.length} source(s).`] : []),
+          ...notes,
+        ].join("  |  "),
       );
     } catch (err) {
       setStatus((err as Error).message);

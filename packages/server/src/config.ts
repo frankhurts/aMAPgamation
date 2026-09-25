@@ -2,7 +2,8 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname, basename, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
-import { isFileSource } from "./types.js";
+import { isCorridorSource, isFileSource } from "./types.js";
+import { CATEGORY_KEYS, unknownCategories } from "./connectors/corridor/categories.js";
 import type { SourceConfig, SourceType } from "./types.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -15,7 +16,7 @@ export const DATA_DIR = resolve(REPO_ROOT, process.env.DATA_DIR ?? "./data");
 export const DB_PATH = resolve(DATA_DIR, "amalgamator.db");
 
 const SOURCES_PATH = resolve(REPO_ROOT, "config/sources.json");
-const VALID_TYPES: SourceType[] = ["mymaps", "caltopo", "gpx", "takeout"];
+const VALID_TYPES: SourceType[] = ["mymaps", "caltopo", "gpx", "takeout", "corridor"];
 
 /**
  * Reads config/sources.json. Missing file is not an error — a fresh clone has
@@ -52,17 +53,23 @@ export function parseSources(parsed: unknown, includeDisabled = false): SourceCo
 
   const sources = raw
     .filter((s): s is SourceConfig => {
-      const c = s as Partial<SourceConfig> & { mapId?: unknown; path?: unknown };
+      const c = s as Partial<SourceConfig> & { mapId?: unknown; path?: unknown; route?: unknown };
       if (typeof c?.type !== "string" || !VALID_TYPES.includes(c.type as SourceType)) return false;
       if (typeof c?.id !== "string") return false;
       if (!includeDisabled && c.enabled === false) return false;
 
-      // Remote sources are addressed by map id, file sources by path. A source
-      // missing its addressing field cannot be fetched, so it is dropped here
-      // rather than failing later with a confusing connector error.
-      return c.type === "gpx" || c.type === "takeout"
-        ? typeof c.path === "string" && c.path.length > 0
-        : typeof c.mapId === "string" && c.mapId.length > 0;
+      // Each kind of source is addressed by a different field: remote ones by
+      // map id, file ones by path, a corridor by the route it follows. A
+      // source missing its addressing field cannot be fetched, so it is
+      // dropped here rather than failing later with a confusing connector
+      // error.
+      if (c.type === "gpx" || c.type === "takeout") {
+        return typeof c.path === "string" && c.path.length > 0;
+      }
+      if (c.type === "corridor") {
+        return typeof c.route === "string" && c.route.length > 0;
+      }
+      return typeof c.mapId === "string" && c.mapId.length > 0;
     })
     .map((s) => ({ ...s, label: s.label ?? s.id }));
 
@@ -82,6 +89,20 @@ export function parseSources(parsed: unknown, includeDisabled = false): SourceCo
     seen.add(s.id);
   }
 
+  // A misspelled category would otherwise fetch nothing and say nothing —
+  // the source would sync "successfully" with a category quietly missing.
+  for (const s of sources) {
+    if (!isCorridorSource(s)) continue;
+    const unknown = unknownCategories(s);
+    if (unknown.length > 0) {
+      throw new Error(
+        `Source "${s.id}" names unknown categor${unknown.length === 1 ? "y" : "ies"} ` +
+          `${unknown.map((u) => `"${u}"`).join(", ")}. ` +
+          `Valid categories: ${CATEGORY_KEYS.join(", ")}.`,
+      );
+    }
+  }
+
   return sources;
 }
 
@@ -97,9 +118,11 @@ export function redactMapId(mapId: string): string {
  * never ends up in a pasted stack trace.
  */
 export function describeSource(cfg: SourceConfig): string {
-  return isFileSource(cfg)
-    ? `path ${redactPath(cfg.path)}`
-    : `map ${redactMapId(cfg.mapId)}`;
+  if (isFileSource(cfg)) return `path ${redactPath(cfg.path)}`;
+  // A route ref is either a repo-relative path or a layer id, neither of which
+  // is a secret the way a share token is.
+  if (isCorridorSource(cfg)) return `route ${redactPath(cfg.route)}`;
+  return `map ${redactMapId(cfg.mapId)}`;
 }
 
 /**

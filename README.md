@@ -72,6 +72,7 @@ config/sources.json ─→ connectors/ ─→ NormalizedFeature ─→ SQLite �
                        mymaps.ts                            (data/)
                        caltopo.ts
                        gpx.ts
+                       corridor/   ← fetches along a route rather than importing
 ```
 
 Every connector normalizes to one canonical feature shape that keeps a verbatim
@@ -150,6 +151,123 @@ from My Maps.
 
 Distances are measured to the nearest point on the route, so a trail that dips
 into the corridor counts, with its mile marker where it comes closest.
+
+## Fetching camping and services along a route
+
+Every other source **imports** a map you already drew. A `corridor` source is
+the opposite: it asks several agencies what exists near a line, and pulls back
+BLM camping, fuel, water, groceries, toilets and dump stations along a trip.
+
+```json
+{
+  "type": "corridor",
+  "id": "trip2-services",
+  "label": "Trip 2 — Camping & Services",
+  "route": "trips/C-balanced",
+  "buffers": { "camping": 25, "fuel": 5, "water": 5, "groceries": 10 },
+  "providers": ["blm", "osm"]
+}
+```
+
+`route` is the same ref the **Along route** tab uses — a folder of GPX, one
+`.gpx` file, or `layer:<id>`. Results land in the ordinary layers and features
+tables, so sidebar toggles, colors, popups, `/api/near` and `--prune` all work
+on them exactly as they do on an imported map.
+
+### Categories
+
+One layer per category, not per provider: the question is "where can I camp",
+not "what does BLM think", so BLM campgrounds and OSM campsites share a toggle
+and each feature names its own provider in the popup. `buffers` is **miles
+off-route**, and every category has a default, so naming one buffer widens that
+category rather than narrowing the rest. To fetch fewer categories, list the
+ones you want in `categories`.
+
+| Category | Default | Comes from |
+| --- | --- | --- |
+| `camping` | 25 mi | BLM campgrounds & developed sites, OSM campsites, RIDB |
+| `dispersed` | 25 mi | BLM primitive/undeveloped sites, OSM `backcountry` campsites |
+| `fuel` | 5 mi | OSM |
+| `water` | 5 mi | BLM potable water, OSM drinking water |
+| `groceries` | 10 mi | OSM supermarkets and convenience stores |
+| `dump` | 25 mi | BLM RV dump stations, OSM sanitary dump stations |
+| `toilets` | 10 mi | BLM, OSM |
+| `showers` | 25 mi | OSM |
+| `ranger` | 25 mi | BLM ranger stations and visitor centers |
+
+### Providers
+
+| id | Needs a key? | What it is good for |
+| --- | --- | --- |
+| `blm` | No | Public-land recreation sites. Buffers the route server-side. |
+| `osm` | No | The only source for fuel, groceries and water. Crowdsourced. |
+| `ridb` | **Yes** | recreation.gov — NPS, USFS, BLM, USACE campgrounds, and the only one that knows what is reservable. |
+
+`blm` and `osm` are the default. Add `ridb` explicitly and put a free key from
+<https://ridb.recreation.gov/profile> in `.env` as `RIDB_API_KEY`; without one
+it says so and the rest of the sync carries on. It is also much slower than the
+others: its API only answers "what is near this point" with a 25-mile cap, so a
+cross-country route takes a few hundred requests rather than a handful.
+
+Providers run one at a time, and one being down does not throw away the others
+— the sync reports what was missing and keeps what it got.
+
+**Be gentle with Overpass.** It is donated infrastructure, and its real limit is
+not the published quota: an IP that queries too often gets blocked at the TCP
+level for tens of minutes, which looks like the server being down rather than
+like an error. Requests therefore go out one at a time, five seconds apart, and
+a refused connection gives up on that instance immediately and tries the mirror
+rather than hammering it. A whole route is only a handful of requests, and the
+cache means a re-sync is none — so the ordinary way to get blocked is to keep
+clearing the cache. The mirror works but is far slower, which is why the client
+timeout is 120 s.
+
+### Why the distances are trustworthy
+
+Providers are queried with a **simplified** route, because a trip is hundreds of
+thousands of trackpoints and no API will take that. Douglas-Peucker guarantees
+the line sent never strays more than 800 m from the real one, so every query
+asks for a little more than you wanted — and then **every result is
+re-measured against the full-resolution route** before it is kept.
+
+That is what makes `offRouteMiles` and `mileMarker` mean the same thing for an
+OSM node and a BLM point, and it is why anything a provider over-returned is
+dropped rather than shown as a near-miss.
+
+Records of the same place are merged within 150 m, and the agency's record
+wins over the crowdsourced one. What counts as "the same place" depends on
+where the two records came from:
+
+- **Across providers**, being that close is enough — BLM and OSM name the same
+  campground differently often enough that demanding a matching name would
+  merge almost nothing.
+- **Within one provider**, the names have to match too. OSM maps a campground
+  as an area *and* a node inside it, so the same site really does come back
+  twice; but two unnamed pumps either side of a junction are two real gas
+  stations, and proximity alone would delete one.
+
+### Responses are cached
+
+A cross-country corridor is dozens of requests against free, rate-limited,
+community-run services, so responses are cached on disk under
+`data/cache/corridor/`, keyed by the exact query. Re-syncing to pick up one
+edited My Maps pin does not replay them. Editing the route changes the key and
+does re-fetch. `CORRIDOR_NO_CACHE=1` bypasses it; `CORRIDOR_CACHE_TTL_MS` sets
+how long entries live (default 7 days).
+
+### What this does not answer
+
+**`dispersed` is not a dispersed-camping map, and it is thin.** BLM's data is an
+inventory of *designated* sites: on a Moab→Cortez corridor at a generous
+50-mile buffer, 34 of its points are "primitive" and only one of those is
+genuinely open dispersed camping — most of the rest are boat-in river camps
+that happen to sit near a road. Nationally the coverage is much better, but the
+shape of the answer is the same.
+
+Whether you may actually camp somewhere is decided by land-status polygons and
+travel-management rules, not points. That is Phase 3 (PAD-US / BLM SMA / MVUM
+clipped to the corridor), and it is the layer that turns "there is a designated
+site here" into "this is BLM, disperse at will".
 
 ## Renaming a source
 
@@ -258,7 +376,7 @@ is what makes the whole thing work with no signal.
 
 ## Roadmap
 
-- **Phase 2** — Google Takeout + Places hydration (GPX import: done)
+- **Phase 2** — Google Takeout + Places hydration (GPX import, corridor fetch: done)
 - **Phase 3** — PAD-US / BLM / USFS MVUM clipped to route, built into PMTiles
 - **Phase 4** — Trip → Day → Stop model, offline PWA packaging
 

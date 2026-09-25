@@ -1,6 +1,7 @@
 import { syncMyMaps } from "./mymaps.js";
 import { syncCalTopo } from "./caltopo.js";
 import { syncGpx } from "./gpx.js";
+import { syncCorridor } from "./corridor/index.js";
 import { replaceSource } from "../db.js";
 import { describeSource } from "../config.js";
 import type { SourceConfig, SyncResult } from "../types.js";
@@ -14,7 +15,7 @@ export async function syncSource(cfg: SourceConfig): Promise<SyncResult> {
   const base = { sourceKey: cfg.id, type: cfg.type, label: cfg.label };
 
   try {
-    let result: Awaited<ReturnType<typeof syncMyMaps>>;
+    let result: Awaited<ReturnType<typeof syncMyMaps>> & { notes?: string[] };
     switch (cfg.type) {
       case "mymaps":
         result = await syncMyMaps(cfg);
@@ -24,6 +25,9 @@ export async function syncSource(cfg: SourceConfig): Promise<SyncResult> {
         break;
       case "gpx":
         result = await syncGpx(cfg);
+        break;
+      case "corridor":
+        result = await syncCorridor(cfg);
         break;
       default:
         throw new Error(`Connector "${cfg.type}" is not implemented yet (Phase 2).`);
@@ -35,6 +39,7 @@ export async function syncSource(cfg: SourceConfig): Promise<SyncResult> {
       ok: true,
       layers: result.layers.length,
       features: result.features.length,
+      notes: result.notes,
       durationMs: Date.now() - started,
     };
   } catch (err) {

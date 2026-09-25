@@ -167,6 +167,19 @@ function bounds(fc: GeoJSON.FeatureCollection): maplibregl.LngLatBounds | null {
   return any ? b : null;
 }
 
+/**
+ * Popups are built as HTML strings, and corridor features carry text written
+ * by strangers on the internet — an OSM `name` tag or a recreation.gov
+ * description is not markup and must not be able to become markup.
+ */
+function esc(v: unknown): string {
+  return String(v ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
+  );
+}
+
 export function MapView({ data, visibleLayerIds, basemap, fitKey, corridor, focus }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
@@ -229,16 +242,19 @@ export function MapView({ data, visibleLayerIds, basemap, fitKey, corridor, focu
         const f = e.features?.[0];
         if (!f) return;
         const p = f.properties as Record<string, string>;
+        // Corridor features name the service they came from and what kind of
+        // thing they are; imported ones only know which app they came out of.
+        const origin = [p["providerLabel"], p["categoryLabel"]].filter(Boolean).join(" · ");
         const html = `
           <div class="popup">
-            <strong>${p["name"] || "(untitled)"}</strong>
-            <div class="popup-src">${p["source"]}</div>
+            <strong>${esc(p["name"]) || "(untitled)"}</strong>
+            <div class="popup-src">${esc(origin || p["source"])}</div>
             ${
               p["mileMarker"] !== undefined
-                ? `<div class="popup-mile">Mile ${Number(p["mileMarker"]).toLocaleString()} · ${p["offRouteMiles"]} mi off route</div>`
+                ? `<div class="popup-mile">Mile ${Number(p["mileMarker"]).toLocaleString()} · ${esc(p["offRouteMiles"])} mi off route</div>`
                 : ""
             }
-            ${p["description"] ? `<div class="popup-desc">${p["description"]}</div>` : ""}
+            ${p["description"] ? `<div class="popup-desc">${esc(p["description"])}</div>` : ""}
           </div>`;
         new maplibregl.Popup({ maxWidth: "320px" })
           .setLngLat(e.lngLat)

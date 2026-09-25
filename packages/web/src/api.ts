@@ -19,6 +19,12 @@ export interface SyncResult {
   layers: number;
   features: number;
   error?: string;
+  /**
+   * Things worth saying that are not failures — a provider skipped for want of
+   * an API key, or one provider down while the rest succeeded. A corridor sync
+   * can half-work in ways a map import cannot.
+   */
+  notes?: string[];
 }
 
 async function json<T>(res: Response): Promise<T> {

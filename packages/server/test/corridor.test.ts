@@ -17,6 +17,8 @@ const {
   chainLegs,
   dedupeLegs,
   haversine,
+  queryChunks,
+  sampleAlong,
   simplify,
 } = await import("../src/geo/corridor.js");
 type LngLat = [number, number];
@@ -285,4 +287,44 @@ test("a synced layer can be the route, and does not match itself", async () => {
   const { matches, route } = nearRoute(ref, 10);
   assert.equal(route.label, "Route");
   assert.deepEqual(matches.map((m) => m.name), ["Wind Whistle"]);
+});
+
+test("query chunks stay within tolerance of the route and overlap at the seams", () => {
+  // A long arc, so decimation actually has something to remove.
+  const arc: LngLat[] = Array.from({ length: 2000 }, (_, i) => [
+    -110 + i * 0.002,
+    40 + Math.sin(i / 90) * 0.4,
+  ]);
+  const route = buildRoute([arc]);
+  const chunks = queryChunks(route, 200, 20);
+
+  assert.ok(chunks.length > 1, "a long route is split into several chunks");
+  for (const c of chunks) assert.ok(c.length <= 20 && c.length >= 2, `chunk of ${c.length}`);
+
+  // Consecutive chunks share their boundary vertex, or the buffers around them
+  // would leave an unsearched gap between one chunk and the next.
+  for (let i = 1; i < chunks.length; i++) {
+    assert.deepEqual(chunks[i]![0], chunks[i - 1]![chunks[i - 1]!.length - 1]);
+  }
+
+  // The guarantee the query radius relies on: no point of the real route is
+  // further than the tolerance from the line actually sent.
+  const sent = new Corridor(buildRoute([chunks.flat()]), 200);
+  for (const p of arc) assert.ok(sent.locate(p), `${p} drifted outside the tolerance`);
+});
+
+test("sampling walks the route at a fixed spacing", () => {
+  const leg: LngLat[] = [[-110, 40], [-110, 41]]; // ~111 km due north
+  const points = sampleAlong(leg, 10_000);
+
+  assert.deepEqual(points[0], leg[0], "starts at the beginning");
+  assert.ok(haversine(points[points.length - 1]!, leg[1]!) < 10_000, "reaches the end");
+  for (let i = 1; i < points.length - 1; i++) {
+    const gap = haversine(points[i - 1]!, points[i]!);
+    assert.ok(Math.abs(gap - 10_000) < 50, `gap ${gap.toFixed(0)}m`);
+  }
+
+  // A degenerate leg must not spin forever looking for the next sample.
+  assert.deepEqual(sampleAlong([[-110, 40], [-110, 40]], 1000), [[-110, 40]]);
+  assert.deepEqual(sampleAlong([], 1000), []);
 });
