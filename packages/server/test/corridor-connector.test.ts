@@ -12,6 +12,8 @@ const tmp = mkdtempSync(join(tmpdir(), "amalgamator-corridor-conn-"));
 process.env.DATA_DIR = tmp;
 process.env.OVERPASS_DELAY_MS = "0";
 process.env.CORRIDOR_RETRY_BASE_MS = "1";
+// Keep the fixture route's vertices, so a stretch has enough of them to halve.
+process.env.CORRIDOR_DECIMATE_M = "1";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixture = (n: string) => readFileSync(join(here, "fixtures", "corridor", n), "utf8");
@@ -273,6 +275,58 @@ test("an Overpass timeout reported as an empty 200 is not mistaken for no result
   calls = [];
   await syncCorridor(config({ id: "timeout-corridor", route: `${ROUTE}/a-monticello-to-cortez.gpx` }));
   assert.ok(calls.some((c) => c.includes("/api/interpreter")), "the failed query was not cached");
+});
+
+test("a stretch Overpass refuses is halved and retried, not abandoned", async () => {
+  calls = [];
+  const saved = globalThis.fetch;
+  const seen: number[] = [];
+  // Earlier tests already cached this route's stretches, which would mask the
+  // retry entirely; this test is about what goes over the wire.
+  process.env.CORRIDOR_NO_CACHE = "1";
+
+  // Refuse any query whose polyline is longer than 8 coordinate pairs, the way
+  // Overpass refuses one that covers too much ground: HTTP 200, no elements,
+  // and the reason in `remark`. A smaller stretch is answered normally.
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input).includes("/api/interpreter")) {
+      const query = decodeURIComponent(String(init?.body ?? ""));
+      seen.push((query.match(/around:\d+,([\d.,-]+)\)/)?.[1] ?? "").split(",").length / 2);
+      // Refuse the first stretch the way Overpass refuses one covering too
+      // much ground, and answer whatever smaller stretches follow it.
+      if (seen.length === 1) {
+        return new Response(
+          JSON.stringify({ elements: [], remark: "runtime error: Query timed out" }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      return new Response(fixture("overpass.json"), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return saved(input, init);
+  }) as typeof fetch;
+
+  try {
+    const { features, notes } = await syncCorridor(
+      config({ id: "split-corridor", providers: ["osm"] }),
+    );
+    assert.ok(seen.length > 1, "the refused stretch was retried rather than dropped");
+    assert.ok(
+      seen[1]! < seen[0]!,
+      `the retry must ask for less than the refusal: went ${seen[0]} -> ${seen[1]}`,
+    );
+    assert.ok(notes.some((n) => /were split/.test(n)), notes.join(" | "));
+    assert.ok(
+      !notes.some((n) => /stretches of the route/.test(n)),
+      "splitting recovered it, so nothing should be reported as missing",
+    );
+    assert.ok(features.length > 0, "and the data came back");
+  } finally {
+    globalThis.fetch = saved;
+    delete process.env.CORRIDOR_NO_CACHE;
+  }
 });
 
 test("an unknown provider or an unusable route is refused with a usable message", async () => {

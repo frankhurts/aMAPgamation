@@ -77,6 +77,17 @@ interface OverpassElement {
   tags?: Record<string, string>;
 }
 
+/**
+ * How many times a stretch may halve itself before giving up.
+ *
+ * Whatever the default stretch length, some of them cross a city and cost far
+ * more than the same mileage of desert. Rather than tune for the worst case
+ * and make every other query needlessly small, a stretch that is refused is
+ * cut in half and each half asked for separately. Four splits takes 80 miles
+ * down to 5 before admitting defeat.
+ */
+const MAX_SPLITS = Number(process.env.OVERPASS_MAX_SPLITS ?? 4);
+
 export const osm: Provider = {
   id: "osm",
   label: "OpenStreetMap",
@@ -87,50 +98,59 @@ export const osm: Provider = {
     const chunks = ctx.chunks(MAX_POINTS, MAX_CHUNK_MILES * METERS_PER_MILE);
     const sites: RawSite[] = [];
     let first = true;
-
     let failed = 0;
+    let split = 0;
 
-    for (const chunk of chunks) {
-      const query = buildQuery(chunk, ctx);
+    const fetchStretch = async (
+      stretch: [number, number][],
+      depth: number,
+    ): Promise<OverpassElement[]> => {
+      const query = buildQuery(stretch, ctx);
       if (!query) return [];
 
-      const key = cacheKey("overpass", ctx.routeKey, query);
-      let elements: OverpassElement[];
       try {
-        elements = await cached(
-        "osm",
-        key,
-        ctx.stats,
-        async () => {
+        return await cached("osm", cacheKey("overpass", ctx.routeKey, query), ctx.stats, async () => {
           // Only pause before a request that is actually going out; a fully
-          // cached re-sync should not sit through a delay per chunk.
+          // cached re-sync should not sit through a delay per stretch.
           if (!first) await sleep(POLITE_MS);
           first = false;
 
           const body = await overpass(query);
-          // Overpass reports a timed-out or aborted query as HTTP 200 with an
-          // empty `elements` and a `remark` — so the one failure mode that
-          // must not pass silently looks exactly like "nothing out here".
-          // Throwing means it is retried, then reported, and never cached.
-          if (body.remark) {
-            throw new ProviderError(
-              `Overpass could not answer: ${body.remark}. ` +
-                `Try a smaller OVERPASS_CHUNK_MILES (currently ${MAX_CHUNK_MILES}).`,
-            );
-          }
+          // Overpass reports a query it could not finish as HTTP 200 with an
+          // empty `elements` and the reason in `remark` — so the one failure
+          // mode that must not pass silently looks exactly like "nothing out
+          // here". Throwing means it is split, retried, and never cached.
+          if (body.remark) throw new ProviderError(`Overpass could not answer: ${body.remark}`);
           return body.elements ?? [];
-        },
-        );
+        });
       } catch (err) {
-        // One chunk out of dozens failing must not discard the rest. Over half
-        // an hour of querying, losing 80 miles of a 5,000 mile route is worth
-        // saying out loud and carrying on from; the chunks that did land stay
-        // cached, so a rerun retries only the gaps.
+        // Only worth halving if the query asked for too much. A refused
+        // connection or a broken query fails the same way however small the
+        // stretch, and splitting would just multiply the damage.
+        const tooBig = /timed out|could not answer|504/i.test((err as Error).message);
+        if (!tooBig || depth >= MAX_SPLITS || stretch.length < 4) throw err;
+
+        // The halves share their middle vertex, so their buffers still meet.
+        const mid = Math.floor(stretch.length / 2);
+        split++;
+        return [
+          ...(await fetchStretch(stretch.slice(0, mid + 1), depth + 1)),
+          ...(await fetchStretch(stretch.slice(mid), depth + 1)),
+        ];
+      }
+    };
+
+    for (const chunk of chunks) {
+      let elements: OverpassElement[];
+      try {
+        elements = await fetchStretch(chunk, 0);
+      } catch (err) {
+        // One stretch out of dozens failing must not discard the rest. Half an
+        // hour of querying should not be lost to a single timeout, and the
+        // stretches that did land stay cached, so a rerun retries only the
+        // gaps.
         failed++;
-        ctx.warn(
-          `OpenStreetMap: ${failed === 1 ? "" : `${failed} chunks failed, latest `}` +
-            `${(err as Error).message}`,
-        );
+        ctx.warn(`OpenStreetMap: a stretch failed — ${(err as Error).message}`);
         if (failed >= chunks.length) throw err;
         continue;
       }
@@ -141,6 +161,9 @@ export const osm: Provider = {
       }
     }
 
+    if (split > 0) {
+      ctx.warn(`OpenStreetMap: ${split} stretch(es) were split to fit Overpass's limits.`);
+    }
     if (failed > 0) {
       ctx.warn(
         `OpenStreetMap covered ${chunks.length - failed} of ${chunks.length} stretches ` +
