@@ -1,0 +1,162 @@
+[
+ {
+  "name": "Olympic National Park",
+  "routes": "ABC",
+  "state": "Washington",
+  "lat": 47.8021067,
+  "lng": -123.6043524,
+  "addr": "Olympic National Park, 3002 Mt Angeles Rd, Port Angeles, WA 98362, USA"
+ },
+ {
+  "name": "Mount Rainier National Park",
+  "routes": "AB",
+  "state": "Washington",
+  "lat": 46.8671484,
+  "lng": -121.6998559,
+  "addr": "Mount Rainier National Park, Washington, USA"
+ },
+ {
+  "name": "Crater Lake National Park",
+  "routes": "BC",
+  "state": "Oregon",
+  "lat": 42.9294762,
+  "lng": -122.1279394,
+  "addr": "Crater Lake National Park, Oregon, USA"
+ },
+ {
+  "name": "Redwood National and State Parks",
+  "routes": "ABC",
+  "state": "California",
+  "lat": 41.4017156,
+  "lng": -124.041711,
+  "addr": "Redwood National and State Parks, California, USA"
+ },
+ {
+  "name": "Lassen Volcanic National Park",
+  "routes": "B",
+  "state": "California",
+  "lat": 40.49766,
+  "lng": -121.4206552,
+  "addr": "Lassen Volcanic National Park, California, USA"
+ },
+ {
+  "name": "Point Reyes National Seashore",
+  "routes": "A",
+  "state": "California",
+  "lat": 38.017769,
+  "lng": -122.9912711,
+  "addr": "Point Reyes, California, USA"
+ },
+ {
+  "name": "Yosemite National Park",
+  "routes": "B",
+  "state": "California",
+  "lat": 37.8651011,
+  "lng": -119.5383294,
+  "addr": "Yosemite National Park, California, USA"
+ },
+ {
+  "name": "Sequoia National Park",
+  "routes": "BC",
+  "state": "California",
+  "lat": 36.4863668,
+  "lng": -118.5657516,
+  "addr": "Sequoia National Park, California, USA"
+ },
+ {
+  "name": "Kings Canyon National Park",
+  "routes": "BC",
+  "state": "California",
+  "lat": 36.8878548,
+  "lng": -118.5551477,
+  "addr": "Kings Canyon National Park, California, USA"
+ },
+ {
+  "name": "Death Valley National Park",
+  "routes": "BC",
+  "state": "California / Nevada",
+  "lat": 36.5053891,
+  "lng": -117.0794078,
+  "addr": "Death Valley National Park, United States"
+ },
+ {
+  "name": "Joshua Tree National Park",
+  "routes": "ABC",
+  "state": "California",
+  "lat": 33.873415,
+  "lng": -115.9009923,
+  "addr": "Joshua Tree National Park, California, USA"
+ },
+ {
+  "name": "Zion National Park",
+  "routes": "ABC",
+  "state": "Utah",
+  "lat": 37.2982022,
+  "lng": -113.0263005,
+  "addr": "Zion National Park, Utah, USA"
+ },
+ {
+  "name": "Bryce Canyon National Park",
+  "routes": "ABC",
+  "state": "Utah",
+  "lat": 37.5930377,
+  "lng": -112.1870895,
+  "addr": "Bryce Canyon National Park, Utah, USA"
+ },
+ {
+  "name": "Capitol Reef National Park",
+  "routes": "AB",
+  "state": "Utah",
+  "lat": 38.0877312,
+  "lng": -111.1354983,
+  "addr": "Capitol Reef National Park, Utah, USA"
+ },
+ {
+  "name": "Arches National Park",
+  "routes": "ABC",
+  "state": "Utah",
+  "lat": 38.7328166,
+  "lng": -109.5746222,
+  "addr": "Arches National Park, Utah, USA"
+ },
+ {
+  "name": "Canyonlands National Park",
+  "routes": "ABC",
+  "state": "Utah",
+  "lat": 38.2135733,
+  "lng": -109.9025345,
+  "addr": "Canyonlands National Park, Utah, USA"
+ },
+ {
+  "name": "Mesa Verde National Park",
+  "routes": "AC",
+  "state": "Colorado",
+  "lat": 37.2308729,
+  "lng": -108.4618335,
+  "addr": "Mesa Verde National Park, Colorado, USA"
+ },
+ {
+  "name": "Great Sand Dunes National Park and Preserve",
+  "routes": "A",
+  "state": "Colorado",
+  "lat": 37.7658491,
+  "lng": -105.6235976,
+  "addr": "Great Sand Dunes National Park and Preserve, Colorado, USA"
+ },
+ {
+  "name": "Black Canyon of the Gunnison National Park",
+  "routes": "B",
+  "state": "Colorado",
+  "lat": 38.5753936,
+  "lng": -107.7415961,
+  "addr": "Black Canyon of the Gunnison National Park, Colorado, USA"
+ },
+ {
+  "name": "Rocky Mountain National Park",
+  "routes": "ABC",
+  "state": "Colorado",
+  "lat": 40.3427932,
+  "lng": -105.6836389,
+  "addr": "Rocky Mountain National Park, Colorado, USA"
+ }
+]
